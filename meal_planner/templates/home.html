@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome - Meal Planner{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <h1>What's for dinner this week?</h1>
+    <p>Plan meals together, stop wondering "what's for dinner" at 5pm, and never lose a recipe again.</p>
+    <div class="flex gap-2 flex-center" style="margin-top: var(--spacing-lg);">
+        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">Get Started</a>
+        <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-lg">Sign In</a>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features">
+    <div class="card feature-card hover-lift">
+        <div class="feature-icon">📖</div>
+        <h3>Never lose a recipe again</h3>
+        <p>Save all your favorite recipes in one beautiful place. Add photos, organize by cuisine, mark your favorites.</p>
+    </div>
+
+    <div class="card feature-card hover-lift">
+        <div class="feature-icon">📅</div>
+        <h3>Answer "what's for dinner" on Sunday, not at 5pm</h3>
+        <p>Plan your entire week once and reduce weeknight stress. See exactly what you're cooking each day.</p>
+    </div>
+
+    <div class="card feature-card hover-lift">
+        <div class="feature-icon">🛒</div>
+        <h3>Shopping lists that actually work</h3>
+        <p>Automatically generate shopping lists from your planned meals. Check items off right on your phone.</p>
+    </div>
+
+    <div class="card feature-card hover-lift">
+        <div class="feature-icon">👨‍👩‍👧‍👦</div>
+        <h3>Plan together, decide together</h3>
+        <p>Invite your partner or family to share recipes and plan meals together. Everyone's on the same page.</p>
+    </div>
+
+    <div class="card feature-card hover-lift">
+        <div class="feature-icon">✍️</div>
+        <h3>Recipes in your own words</h3>
+        <p>Write recipes like you'd tell a friend. No fancy formatting or technical jargon needed.</p>
+    </div>
+
+    <div class="card feature-card hover-lift">
+        <div class="feature-icon">🎯</div>
+        <h3>Built for real life</h3>
+        <p>Simple, beautiful design that works on your phone, tablet, and computer. No complexity, just planning.</p>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section style="text-align: center; padding: var(--spacing-xl) var(--spacing-lg); background-color: rgba(135, 168, 120, 0.05); border-radius: var(--radius-lg); margin-top: var(--spacing-xl);">
+    <h2>Ready to simplify your meal planning?</h2>
+    <p style="font-size: 1.125rem; margin: var(--spacing-lg) 0; color: #666;">
+        Join families who've stopped the daily "what's for dinner" stress.
+    </p>
+    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">Create Your Free Account</a>
+</section>
+{% endblock %}

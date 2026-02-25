@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Meal Planner{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Welcome back, {{ current_user.username }}! 👋</h1>
+    {% if current_user.household %}
+        <p style="color: #666; margin: 0;">{{ current_user.household.name }}</p>
+    {% endif %}
+</div>
+
+<!-- Onboarding Flow for New Users (only show if no household yet) -->
+{% if not current_user.household %}
+<section class="onboarding-flow">
+    <h2 style="text-align: center; margin-bottom: var(--spacing-lg);">Let's get you started! 🎉</h2>
+
+    <!-- Step 1: Create Household -->
+    <div class="onboarding-step active">
+        <div class="step-number">1</div>
+        <div class="step-content">
+            <h3>Create a household</h3>
+            <p>Start by creating a household (or invite a partner to join yours). This is where all your meal planning happens.</p>
+            <a href="{{ url_for('household.create') }}" class="btn btn-primary">Set Up Household</a>
+        </div>
+    </div>
+</section>
+
+<hr style="margin: var(--spacing-xl) 0; border-color: var(--light-gray);">
+{% endif %}
+
+<!-- Quick Actions -->
+<div class="dashboard-grid">
+    {% if current_user.household %}
+    <div class="quick-action hover-lift" style="border: 2px solid var(--sage-green); box-shadow: 0 4px 12px rgba(135, 168, 120, 0.15);">
+        <div style="flex: 1;">
+            <h4 style="margin: 0 0 0.25rem 0; color: var(--sage-green);">📅 Plan This Week</h4>
+            <p style="margin: 0; color: #666; font-size: 0.875rem;">Paste URLs to import recipes directly</p>
+        </div>
+        <a href="{{ url_for('planner.index') }}" class="btn btn-primary btn-sm">Start Planning</a>
+    </div>
+
+    <div class="quick-action hover-lift">
+        <div style="flex: 1;">
+            <h4 style="margin: 0 0 0.25rem 0;">🛒 Shopping List</h4>
+            <p style="margin: 0; color: #666; font-size: 0.875rem;">Check off items as you shop</p>
+        </div>
+        <a href="{{ url_for('shopping.index') }}" class="btn btn-secondary btn-sm">Shop</a>
+    </div>
+    {% else %}
+    <div class="quick-action hover-lift">
+        <div style="flex: 1;">
+            <h4 style="margin: 0 0 0.25rem 0;">👥 Create Household</h4>
+            <p style="margin: 0; color: #666; font-size: 0.875rem;">Invite family to plan together</p>
+        </div>
+        <a href="{{ url_for('household.create') }}" class="btn btn-primary btn-sm">Create</a>
+    </div>
+    {% endif %}
+
+    <div class="quick-action hover-lift">
+        <div style="flex: 1;">
+            <h4 style="margin: 0 0 0.25rem 0;">📖 My Recipes</h4>
+            <p style="margin: 0; color: #666; font-size: 0.875rem;">View and manage your collection</p>
+        </div>
+        <a href="{{ url_for('meals.library') }}" class="btn btn-secondary btn-sm">View</a>
+    </div>
+
+    {% if current_user.household %}
+    <div class="quick-action hover-lift">
+        <div style="flex: 1;">
+            <h4 style="margin: 0 0 0.25rem 0;">★ Favorites</h4>
+            <p style="margin: 0; color: #666; font-size: 0.875rem;">Your go-to recipes</p>
+        </div>
+        <a href="{{ url_for('meals.favorites') }}" class="btn btn-secondary btn-sm">View</a>
+    </div>
+    {% endif %}
+
+    <div class="quick-action hover-lift">
+        <div style="flex: 1;">
+            <h4 style="margin: 0 0 0.25rem 0;">➕ Add Recipe</h4>
+            <p style="margin: 0; color: #666; font-size: 0.875rem;">Add a new meal to your collection</p>
+        </div>
+        <a href="{{ url_for('meals.create') }}" class="btn btn-primary btn-sm">Add</a>
+    </div>
+
+    <div class="quick-action hover-lift">
+        <div style="flex: 1;">
+            <h4 style="margin: 0 0 0.25rem 0;">🔗 Import Recipe</h4>
+            <p style="margin: 0; color: #666; font-size: 0.875rem;">From a blog URL (we'll extract it)</p>
+        </div>
+        <a href="{{ url_for('meals.import_recipe') }}" class="btn btn-primary btn-sm">Import</a>
+    </div>
+</div>
+
+<!-- Helpful Tips -->
+<section style="margin-top: var(--spacing-xl); padding: var(--spacing-lg); background: linear-gradient(135deg, rgba(244, 162, 97, 0.1) 0%, rgba(135, 168, 120, 0.1) 100%); border-radius: var(--radius-lg); border-left: 4px solid var(--honey-gold);">
+    <h3 style="margin-top: 0;">💡 Pro Tips</h3>
+    <ul style="margin: 0; padding-left: 1.5rem;">
+        <li>Add recipes as you try them. You don't need a complete cookbook to start planning.</li>
+        <li>You can edit recipes anytime, so don't worry about getting everything perfect on the first try.</li>
+        <li>Plan your week on Sunday to avoid the 5pm "what's for dinner" panic.</li>
+        <li>Share your household with your partner to plan meals together.</li>
+    </ul>
+</section>
+{% endblock %}

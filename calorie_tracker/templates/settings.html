@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Settings — Calorie Tracker{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <div class="settings-header">
+        <h1 class="settings-title">Settings</h1>
+    </div>
+
+    <form method="POST" class="settings-form">
+        {{ form.hidden_tag() }}
+
+        <!-- Account Info -->
+        <div class="settings-section">
+            <h2 class="settings-section-title">Account</h2>
+            <div class="settings-info-card">
+                <div class="settings-info-row">
+                    <span class="settings-info-label">Username</span>
+                    <span class="settings-info-value">{{ current_user.username }}</span>
+                </div>
+                <div class="settings-info-row">
+                    <span class="settings-info-label">Email</span>
+                    <span class="settings-info-value">{{ current_user.email }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calorie Goal -->
+        <div class="settings-section">
+            <h2 class="settings-section-title">Daily Goal</h2>
+            <div class="form-group">
+                <label class="form-label" for="daily_calorie_goal">Calories per day</label>
+                <div class="goal-input-wrap">
+                    {{ form.daily_calorie_goal(class="form-input form-input--lg", id="daily_calorie_goal") }}
+                    <span class="goal-unit">cal</span>
+                </div>
+                {% for error in form.daily_calorie_goal.errors %}
+                <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Macro Split -->
+        <div class="settings-section">
+            <h2 class="settings-section-title">Macro Split</h2>
+            <div id="macro-total-warning" class="macro-warning hidden">
+                Percentages must add up to 100%
+            </div>
+
+            <div class="macro-inputs">
+                <div class="macro-input-group">
+                    <label class="form-label" for="protein_goal_pct">Protein</label>
+                    <div class="macro-input-row">
+                        {{ form.protein_goal_pct(class="form-input macro-pct-input", id="protein_goal_pct") }}
+                        <span class="macro-pct">%</span>
+                        <span class="macro-grams" id="protein-grams">—</span>
+                    </div>
+                    {% for error in form.protein_goal_pct.errors %}
+                    <span class="form-error">{{ error }}</span>
+                    {% endfor %}
+                </div>
+
+                <div class="macro-input-group">
+                    <label class="form-label" for="carb_goal_pct">Carbs</label>
+                    <div class="macro-input-row">
+                        {{ form.carb_goal_pct(class="form-input macro-pct-input", id="carb_goal_pct") }}
+                        <span class="macro-pct">%</span>
+                        <span class="macro-grams" id="carb-grams">—</span>
+                    </div>
+                    {% for error in form.carb_goal_pct.errors %}
+                    <span class="form-error">{{ error }}</span>
+                    {% endfor %}
+                </div>
+
+                <div class="macro-input-group">
+                    <label class="form-label" for="fat_goal_pct">Fat</label>
+                    <div class="macro-input-row">
+                        {{ form.fat_goal_pct(class="form-input macro-pct-input", id="fat_goal_pct") }}
+                        <span class="macro-pct">%</span>
+                        <span class="macro-grams" id="fat-grams">—</span>
+                    </div>
+                    {% for error in form.fat_goal_pct.errors %}
+                    <span class="form-error">{{ error }}</span>
+                    {% endfor %}
+                </div>
+
+                <div class="macro-total-row">
+                    <span>Total</span>
+                    <span id="macro-total">100%</span>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--full">Save Settings</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Home - Workout Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Home</h1>
+</div>
+
+<div id="no-program" class="hidden">
+    <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+        </svg>
+        <h3>No program yet</h3>
+        <p>Create a program to get started with your workouts.</p>
+        <a href="{{ url_for('views.programs') }}" class="btn btn-primary">Go to Programs</a>
+    </div>
+</div>
+
+<div id="home-content" class="hidden">
+    <div class="welcome-card">
+        <h2 id="welcome-title">Welcome back!</h2>
+        <p id="program-name-display"></p>
+    </div>
+    <div id="upcoming-workouts"></div>
+</div>
+
+<a href="{{ url_for('views.quick_log') }}" class="fab">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Quick Log
+</a>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadHome() {
+    try {
+        const programs = await api.get('/api/programs');
+        if (!programs.length) {
+            document.getElementById('no-program').classList.remove('hidden');
+            return;
+        }
+
+        const program = programs[0];
+        document.getElementById('program-name-display').textContent = program.name;
+
+        const data = await api.get(`/api/programs/${program.id}/next`);
+        document.getElementById('home-content').classList.remove('hidden');
+
+        const container = document.getElementById('upcoming-workouts');
+        container.innerHTML = '';
+
+        const inProgressLogId = data.in_progress_log_id || null;
+
+        data.upcoming.forEach((workout, i) => {
+            const isToday = i === 0;
+            const card = document.createElement('div');
+            card.className = `workout-card ${isToday ? 'today' : ''}`;
+
+            const exercises = workout.exercises || [];
+            const shown = exercises.slice(0, 3);
+            const more = exercises.length - 3;
+
+            let startButton;
+            if (isToday && inProgressLogId) {
+                startButton = `
+                    <div class="start-bar">
+                        <span class="meta">In progress</span>
+                        <button class="btn btn-success" onclick="window.location.href=SCRIPT_ROOT+'/workout/${inProgressLogId}/active'">Resume</button>
+                    </div>
+                `;
+            } else if (isToday) {
+                startButton = `
+                    <div class="start-bar">
+                        <span class="meta">${exercises.length} exercises</span>
+                        <button class="btn btn-success" onclick="startWorkout(${workout.id}, ${program.id})">Start</button>
+                    </div>
+                `;
+            } else {
+                startButton = '';
+            }
+
+            card.innerHTML = `
+                <div class="workout-card-header">
+                    <h3>${workout.name}</h3>
+                    <span class="workout-card-date">${isToday ? (inProgressLogId ? 'In Progress' : 'Up Next') : ''}</span>
+                </div>
+                ${shown.map(ex => `
+                    <div class="workout-card-exercise">
+                        <span class="name">${ex.exercise_name}</span>
+                        <span class="detail">${formatSetsReps(ex)}</span>
+                    </div>
+                `).join('')}
+                ${more > 0 ? `<div class="workout-card-more">+${more} more exercises</div>` : ''}
+                ${startButton}
+            `;
+            container.appendChild(card);
+        });
+    } catch (err) {
+        if (err.message.includes('No workouts')) {
+            document.getElementById('no-program').classList.remove('hidden');
+            document.getElementById('no-program').querySelector('h3').textContent = 'No workouts in program';
+            document.getElementById('no-program').querySelector('p').textContent = 'Add workouts to your program to get started.';
+        } else {
+            showToast(err.message, 'error');
+        }
+    }
+}
+
+async function startWorkout(workoutId, programId) {
+    try {
+        const log = await api.post('/api/logs', {
+            workout_id: workoutId,
+            program_id: programId,
+        });
+        window.location.href = SCRIPT_ROOT + `/workout/${log.id}/active`;
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+loadHome();
+</script>
+{% endblock %}

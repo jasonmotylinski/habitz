@@ -1,0 +1,27 @@
+{
+  "name": "Workout Tracker",
+  "short_name": "Workouts",
+  "description": "Simple workout tracking app. Plan programs, log sets, track progress.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f1117",
+  "theme_color": "#4a9eff",
+  "icons": [
+    {
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["fitness", "health"],
+  "prefer_related_applications": false
+}

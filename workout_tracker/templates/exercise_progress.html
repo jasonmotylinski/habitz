@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Exercise Progress - Workout Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <button class="back-btn" onclick="window.location.href=SCRIPT_ROOT+'/history'">‹ History</button>
+    <h1 id="exercise-name" style="font-size: 1.1rem;"></h1>
+</div>
+
+<div id="stats-section" class="hidden mb-4">
+    <div class="card">
+        <div class="card-title">Stats</div>
+        <div id="pr-display"></div>
+        <div id="recent-display"></div>
+    </div>
+</div>
+
+<div class="card-title">History</div>
+<div id="progress-history"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const exerciseId = {{ exercise_id }};
+
+async function loadProgress() {
+    try {
+        const data = await api.get(`/api/exercises/${exerciseId}/progress`);
+        document.getElementById('exercise-name').textContent = data.exercise.name;
+
+        // Display stats
+        const statsSection = document.getElementById('stats-section');
+        const prDisplay = document.getElementById('pr-display');
+        const recentDisplay = document.getElementById('recent-display');
+
+        if (data.exercise.type === 'strength') {
+            statsSection.classList.remove('hidden');
+            if (data.pr) {
+                prDisplay.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border);">
+                        <span class="text-muted">Personal Record</span>
+                        <span style="font-weight: 600;">${data.pr} lb</span>
+                    </div>
+                `;
+            }
+            if (data.recent_weights && data.recent_weights.length) {
+                recentDisplay.innerHTML = `
+                    <div style="padding: 10px 0;">
+                        <div class="text-muted text-sm" style="margin-bottom: 6px;">Recent Weights</div>
+                        <div style="display: flex; gap: 8px;">
+                            ${data.recent_weights.map((w, i) => `
+                                <div style="flex: 1; text-align: center; padding: 8px; background: var(--bg-secondary); border-radius: 6px;">
+                                    <div class="text-sm text-muted">#${i + 1}</div>
+                                    <div style="font-weight: 600;">${w}lb</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        } else if (data.exercise.type === 'cardio') {
+            statsSection.classList.remove('hidden');
+            if (data.recent_durations && data.recent_durations.length) {
+                recentDisplay.innerHTML = `
+                    <div style="padding: 10px 0;">
+                        <div class="text-muted text-sm" style="margin-bottom: 6px;">Recent Sessions</div>
+                        <div style="display: flex; gap: 8px;">
+                            ${data.recent_durations.map((d, i) => `
+                                <div style="flex: 1; text-align: center; padding: 8px; background: var(--bg-secondary); border-radius: 6px;">
+                                    <div class="text-sm text-muted">#${i + 1}</div>
+                                    <div style="font-weight: 600;">${d} min</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Display history
+        const historyContainer = document.getElementById('progress-history');
+        if (!data.history || !data.history.length) {
+            historyContainer.innerHTML = `
+                <div class="empty-state">
+                    <p class="text-sm text-muted">No completed sessions yet</p>
+                </div>
+            `;
+            return;
+        }
+
+        historyContainer.innerHTML = data.history.map(session => {
+            const setsByType = {};
+            for (const set of session.sets) {
+                const key = `set_${set.set_number}`;
+                if (!setsByType[key]) setsByType[key] = [];
+                setsByType[key].push(set);
+            }
+
+            if (data.exercise.type === 'cardio') {
+                const set = session.sets[0];
+                const result = set.completed ? `${set.duration_minutes} min` : 'Skipped';
+                return `
+                    <div class="history-entry">
+                        <div class="history-entry-header">
+                            <h3>${session.workout_name}</h3>
+                            <span class="date">${formatDate(session.date)}</span>
+                        </div>
+                        <div class="history-exercise">
+                            <span class="name">${set.completed ? '✓' : '✗'}</span>
+                            <span class="${set.completed ? 'result' : 'skipped'}">${result}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="history-entry">
+                        <div class="history-entry-header">
+                            <h3>${session.workout_name}</h3>
+                            <span class="date">${formatDate(session.date)}</span>
+                        </div>
+                        ${session.sets.map(set => {
+                            let status = '';
+                            if (set.completed) {
+                                status = set.actual_reps === set.planned_reps ? '✓' : '◐';
+                            } else {
+                                status = '✗';
+                            }
+                            const repsText = `${set.actual_reps}/${set.planned_reps} reps`;
+                            const weightText = set.weight ? ` @ ${set.weight}lb` : '';
+                            return `
+                                <div class="history-exercise">
+                                    <span class="name">${status} Set ${set.set_number}</span>
+                                    <span class="${set.completed ? 'result' : 'skipped'}">${repsText}${weightText}</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }
+        }).join('');
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+loadProgress();
+</script>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Fasting Tracker{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Timer Section -->
+    <div class="timer-section" id="timer-section">
+        <div class="timer-ring-wrap">
+            <svg class="timer-ring" viewBox="0 0 200 200">
+                <circle class="timer-ring-bg" cx="100" cy="100" r="90" />
+                <circle class="timer-ring-progress" cx="100" cy="100" r="90"
+                    stroke-dasharray="565.49"
+                    stroke-dashoffset="565.49"
+                    id="progress-ring" />
+            </svg>
+            <div class="timer-inner" id="timer-inner">
+                <!-- Idle state (no active fast) -->
+                <div class="timer-idle" id="timer-idle">
+                    <span class="timer-idle-label">Ready to fast?</span>
+                    <button class="btn btn--primary timer-start-btn" id="start-btn">Start Fast</button>
+                </div>
+                <!-- Active state -->
+                <div class="timer-active hidden" id="timer-active">
+                    <span class="timer-elapsed" id="timer-elapsed">00:00:00</span>
+                    <span class="timer-target" id="timer-target">of 16h</span>
+                    <span class="timer-pct" id="timer-pct">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Start / End times (shown when active) -->
+        <div class="timer-times hidden" id="timer-times">
+            <div class="timer-time">
+                <span class="timer-time-label">Started</span>
+                <div class="timer-time-row" id="timer-start-row">
+                    <span class="timer-time-value" id="timer-start-time">—</span>
+                    <button class="timer-edit-btn" id="edit-start-btn" title="Edit start time">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                </div>
+                <div class="timer-start-edit hidden" id="timer-start-edit">
+                    <input type="datetime-local" id="start-time-input" class="start-time-input">
+                    <div class="timer-edit-actions">
+                        <button class="timer-edit-cancel" id="cancel-start-btn">Cancel</button>
+                        <button class="timer-edit-save" id="save-start-btn">Save</button>
+                    </div>
+                </div>
+            </div>
+            <div class="timer-time">
+                <span class="timer-time-label">Target end</span>
+                <span class="timer-time-value" id="timer-end-time">—</span>
+            </div>
+        </div>
+
+        <!-- Stop button (shown when active) -->
+        <button class="btn btn--ghost btn--full timer-stop-btn hidden" id="stop-btn">End Fast</button>
+    </div>
+
+    <!-- Duration Presets (shown when idle) -->
+    <div class="presets" id="presets">
+        <h2 class="presets-title">Duration</h2>
+        <div class="presets-grid">
+            <button class="preset" data-hours="12">12h</button>
+            <button class="preset" data-hours="14">14h</button>
+            <button class="preset active" data-hours="16">16h</button>
+            <button class="preset" data-hours="18">18h</button>
+            <button class="preset" data-hours="20">20h</button>
+            <button class="preset" data-hours="24">24h</button>
+        </div>
+        <div class="preset-custom">
+            <input type="number" id="custom-hours-input" class="custom-hours-input"
+                   min="1" max="72" placeholder="Custom hours…">
+        </div>
+    </div>
+
+    <!-- Weekly Summary -->
+    <div class="weekly-summary" id="weekly-summary">
+        <h2 class="weekly-title">This week</h2>
+        <div class="daily-rings" id="daily-rings"></div>
+    </div>
+</div>
+{% endblock %}

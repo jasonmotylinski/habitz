@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Add Food — Calorie Tracker{% endblock %}
+
+{% block content %}
+<div class="search-page" data-meal-type="{{ meal_type }}" data-date="{{ date }}">
+    <!-- Header -->
+    <div class="search-header">
+        <a href="{{ url_for('main.dashboard', date=date) }}" class="back-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </a>
+        <div class="search-header-text">
+            <h1 class="search-title">Add to {{ meal_type|capitalize }}</h1>
+        </div>
+    </div>
+
+    <!-- Search Input -->
+    <div class="search-bar">
+        <svg class="search-bar-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="food-search-input" class="search-input" placeholder="Search foods..." autocomplete="off" autofocus>
+        <button id="search-clear" class="search-clear hidden" aria-label="Clear search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+    </div>
+
+    <!-- Quick Add -->
+    <a href="{{ url_for('food.quick_add', meal=meal_type, date=date) }}" class="quick-add-banner">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>Quick Add Calories</span>
+        <svg class="quick-add-banner-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>
+
+    <!-- Search Results -->
+    <div id="search-results" class="search-results hidden">
+        <h2 class="search-section-title">Results</h2>
+        <div id="search-results-list" class="food-list"></div>
+        <div id="search-loading" class="search-loading hidden">
+            <div class="spinner"></div>
+            <span>Searching databases...</span>
+        </div>
+        <div id="search-empty" class="empty-state hidden">
+            <p>No foods found. Try a different search term.</p>
+        </div>
+    </div>
+
+    <!-- Recent Foods -->
+    <div id="recent-foods" class="recent-section">
+        <h2 class="search-section-title">Recent Foods</h2>
+        <div id="recent-foods-list" class="food-list"></div>
+        <div id="recent-empty" class="empty-state">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--gray-300)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <p>No recent foods yet.<br>Search to add your first entry!</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

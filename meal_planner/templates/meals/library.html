@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}My Recipes - Meal Planner{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="flex-between mb-4" style="gap: var(--spacing-md);">
+    <div>
+        <h1 style="margin: 0 0 var(--spacing-xs) 0;">My Recipe Collection</h1>
+        <p style="color: #666; margin: 0;">Your personal cookbook</p>
+        <small style="color: #999; margin-top: 0.5rem; display: block;">💡 Tip: You can import recipes directly while planning your week</small>
+    </div>
+    <div style="display: flex; gap: var(--spacing-md);">
+        <a href="{{ url_for('meals.create') }}" class="btn btn-primary btn-lg">➕ Add Recipe</a>
+        <a href="{{ url_for('meals.import_recipe') }}" class="btn btn-soft btn-lg">🔗 Import URL</a>
+    </div>
+</div>
+
+<!-- Search -->
+<form method="GET" class="mb-4">
+    <div class="flex" style="gap: var(--spacing-sm);">
+        <input type="text" name="search" class="form-control" placeholder="Search recipes..." value="{{ search }}" style="flex: 1;">
+        {% if category %}
+            <input type="hidden" name="category" value="{{ category }}">
+        {% endif %}
+        <button type="submit" class="btn btn-secondary">Search</button>
+        {% if search or category %}
+            <a href="{{ url_for('meals.library') }}" class="btn btn-soft">Clear</a>
+        {% endif %}
+    </div>
+</form>
+
+<!-- Category Filter -->
+{% if available_categories %}
+<div style="margin-bottom: var(--spacing-lg); padding: var(--spacing-md); background-color: #f5f3f0; border-radius: var(--radius-md);">
+    <label style="display: block; margin-bottom: var(--spacing-sm); font-weight: 600; color: var(--charcoal);">Filter by Category:</label>
+    <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm);">
+        <a href="{{ url_for('meals.library', search=search) }}"
+           class="btn btn-sm {% if not category %}btn-secondary{% else %}btn-soft{% endif %}"
+           style="border-radius: 20px;">
+            All
+        </a>
+        {% for cat in available_categories %}
+            <a href="{{ url_for('meals.library', category=cat, search=search) }}"
+               class="btn btn-sm {% if category == cat %}btn-secondary{% else %}btn-soft{% endif %}"
+               style="border-radius: 20px;">
+                {{ cat }}
+            </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Pending Imports Section -->
+{% if pending_imports %}
+    <div style="margin-bottom: var(--spacing-xl);">
+        <h3 style="margin: var(--spacing-lg) 0 var(--spacing-md) 0; color: var(--honey-gold); font-weight: 600;">⏳ Recipes Being Imported</h3>
+        <div class="recipe-grid">
+            {% for import_item in pending_imports %}
+                <div class="recipe-card"
+                     style="background: linear-gradient(135deg, rgba(244, 162, 97, 0.2) 0%, rgba(135, 168, 120, 0.2) 100%); border: 2px dashed var(--honey-gold); cursor: default; opacity: 0.8;">
+                    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 2;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">⏳</div>
+                            <div style="font-weight: 600; color: var(--honey-gold);">Importing...</div>
+                        </div>
+                    </div>
+                    <div class="recipe-card-content" style="opacity: 0.5;">
+                        <div class="recipe-card-title">{{ import_item.custom_entry }}</div>
+                        <div class="recipe-card-description">From {{ import_item.source_url.split('/')[2] if import_item.source_url else 'URL' }}</div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+<!-- Recipe Grid -->
+{% if meals.items %}
+    <div class="recipe-grid">
+        {% for meal in meals.items %}
+            <a href="{{ url_for('meals.view', id=meal.id) }}" class="recipe-card"
+               style="background-image: url('{% if meal.image_filename %}{% if meal.image_filename.startswith('http') %}{{ meal.image_filename }}{% else %}{{ url_for('static', filename='uploads/' + meal.image_filename) }}{% endif %}{% endif %}');">
+                {% if not meal.image_filename %}
+                    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, var(--light-gray) 0%, #d8d3cc 100%); z-index: 0;"></div>
+                {% endif %}
+                {% if meal.category %}
+                    <div style="position: absolute; top: 10px; right: 10px; z-index: 3; background-color: rgba(135, 168, 120, 0.9); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">
+                        {{ meal.category }}
+                    </div>
+                {% endif %}
+                <div class="recipe-card-content">
+                    <div class="recipe-card-title">{{ meal.name }}</div>
+                    <div class="recipe-card-description">{{ meal.description[:60] if meal.description else 'No description' }}</div>
+                </div>
+            </a>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if meals.pages > 1 %}
+        <nav style="margin-top: var(--spacing-xl); text-align: center;">
+            <div class="flex flex-center gap-2" style="flex-wrap: wrap; justify-content: center;">
+                {% if meals.has_prev %}
+                    <a href="{{ url_for('meals.library', page=meals.prev_num, search=search) }}" class="btn btn-soft">← Previous</a>
+                {% endif %}
+
+                {% for page_num in meals.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num == meals.page %}
+                            <span class="btn btn-soft" style="background-color: var(--sage-green); color: white; pointer-events: none;">{{ page_num }}</span>
+                        {% else %}
+                            <a href="{{ url_for('meals.library', page=page_num, search=search) }}" class="btn btn-soft">{{ page_num }}</a>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if meals.has_next %}
+                    <a href="{{ url_for('meals.library', page=meals.next_num, search=search) }}" class="btn btn-soft">Next →</a>
+                {% endif %}
+            </div>
+        </nav>
+    {% endif %}
+
+{% else %}
+    <!-- Empty State -->
+    <div class="empty-state">
+        <div class="empty-state-icon">📖</div>
+        <h3>Your cookbook is empty, but not for long!</h3>
+        <p>Start by adding your favorite meals. Don't worry—you can edit them anytime.</p>
+        {% if search %}
+            <p style="color: #666; font-size: 0.875rem;">
+                No recipes found matching "<strong>{{ search }}</strong>".
+                <a href="{{ url_for('meals.library') }}">Clear search</a>
+            </p>
+        {% endif %}
+        <a href="{{ url_for('meals.create') }}" class="btn btn-primary btn-lg">Add Your First Recipe</a>
+    </div>
+{% endif %}
+{% endblock %}

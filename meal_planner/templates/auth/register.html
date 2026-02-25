@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account - Meal Planner{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; min-height: calc(100vh - 200px);">
+    <div class="card" style="max-width: 400px; width: 100%; margin: 0 auto;">
+        <div style="padding: var(--spacing-xl);">
+            <div style="text-align: center; margin-bottom: var(--spacing-lg);">
+                <div style="font-size: 2.5rem; margin-bottom: var(--spacing-sm);">🍽️</div>
+                <h2 style="margin: 0 0 var(--spacing-xs) 0; font-family: var(--font-heading);">Get Started</h2>
+                <p style="color: #666; margin: 0;">Create your meal planning account</p>
+            </div>
+
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="form-group">
+                    {{ form.username.label("Username", class="form-label form-label-required") }}
+                    {% if form.username.errors %}
+                        {{ form.username(class="form-control is-invalid", placeholder="your name") }}
+                        <div class="form-error">{{ form.username.errors[0] }}</div>
+                    {% else %}
+                        {{ form.username(class="form-control", placeholder="your name") }}
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    {{ form.email.label("Email Address", class="form-label form-label-required") }}
+                    {% if form.email.errors %}
+                        {{ form.email(class="form-control is-invalid", placeholder="you@example.com") }}
+                        <div class="form-error">{{ form.email.errors[0] }}</div>
+                    {% else %}
+                        {{ form.email(class="form-control", placeholder="you@example.com") }}
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    {{ form.password.label("Password", class="form-label form-label-required") }}
+                    {% if form.password.errors %}
+                        {{ form.password(class="form-control is-invalid") }}
+                        <div class="form-error">{{ form.password.errors[0] }}</div>
+                    {% else %}
+                        {{ form.password(class="form-control") }}
+                    {% endif %}
+                    <small class="form-help">At least 6 characters</small>
+                </div>
+
+                <div class="form-group">
+                    {{ form.password_confirm.label("Confirm Password", class="form-label form-label-required") }}
+                    {% if form.password_confirm.errors %}
+                        {{ form.password_confirm(class="form-control is-invalid") }}
+                        <div class="form-error">{{ form.password_confirm.errors[0] }}</div>
+                    {% else %}
+                        {{ form.password_confirm(class="form-control") }}
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block btn-lg" style="width: 100%; margin-top: var(--spacing-lg);">
+                    Create Account
+                </button>
+            </form>
+
+            <div style="margin-top: var(--spacing-lg); padding-top: var(--spacing-lg); border-top: 1px solid var(--light-gray); text-align: center;">
+                <p style="margin: 0 0 var(--spacing-sm) 0; color: #666;">
+                    Already have an account?
+                </p>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-soft" style="width: 100%;">
+                    Sign In
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Initialize onboarding -->
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/onboarding.js') }}"></script>
+<script>
+    // Show welcome message for new users
+    setTimeout(() => {
+        onboarding.markAsSeen();
+        new Toast('Welcome! Let\'s set up your meal planning account. 👋', 'success', 5000);
+    }, 500);
+</script>
+{% endblock %}
+{% endblock %}

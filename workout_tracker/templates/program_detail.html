@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% block title %}Program - Workout Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <button class="back-btn" onclick="window.location.href=SCRIPT_ROOT+'/programs'">‹ Programs</button>
+    <button class="btn btn-ghost" id="edit-btn" onclick="toggleEdit()">Edit</button>
+</div>
+
+<div id="program-header" class="mb-4">
+    <h1 id="program-title"></h1>
+</div>
+
+<!-- Edit fields (hidden by default) -->
+<div id="edit-fields" class="hidden mb-4">
+    <div class="form-group">
+        <label>Program Name</label>
+        <input type="text" id="edit-name" class="form-control">
+    </div>
+    <button class="btn btn-primary btn-block" onclick="saveEdit()">Save Changes</button>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <div class="card-title">Workouts</div>
+    <button class="btn btn-ghost" id="reorder-btn" onclick="toggleReorder()" style="padding: 4px 12px; font-size: 0.8rem;">Reorder</button>
+</div>
+
+<div id="workouts-list" class="list-group"></div>
+
+<div class="mt-4">
+    <button class="btn btn-primary btn-block" onclick="showAddWorkout()">Add Workout</button>
+</div>
+
+<div class="mt-4">
+    <button class="btn btn-danger btn-block" onclick="deleteProgram()">Delete Program</button>
+</div>
+
+<!-- Add Workout Modal -->
+<div id="workout-modal" class="modal-overlay hidden">
+    <div class="modal">
+        <h2>Add Workout</h2>
+        <div id="available-workouts"></div>
+        <div class="form-group mt-4">
+            <label>Or create new</label>
+            <input type="text" id="new-workout-name" class="form-control" placeholder="e.g. Push Day">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeWorkoutModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="addWorkout()">Add</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const programId = {{ program_id }};
+let program = null;
+let isEditing = false;
+let isReordering = false;
+
+async function loadProgram() {
+    program = await api.get(`/api/programs/${programId}`);
+    document.getElementById('program-title').textContent = program.name;
+    document.getElementById('edit-name').value = program.name;
+
+    const list = document.getElementById('workouts-list');
+    const workouts = program.workouts || [];
+
+    if (!workouts.length) {
+        list.innerHTML = `<div class="list-action" onclick="showAddWorkout()">Add your first workout</div>`;
+        return;
+    }
+
+    if (isReordering) {
+        renderReorderMode(workouts);
+    } else {
+        list.innerHTML = workouts.map((w, i) => `
+            <div class="list-item" onclick="window.location.href=SCRIPT_ROOT+'/workouts/${w.id}/edit'">
+                <div>
+                    <div class="list-item-title">${w.name}</div>
+                    <div class="list-item-subtitle">${(w.exercises || []).join(', ') || 'No exercises'}</div>
+                </div>
+                <span class="list-item-chevron">›</span>
+            </div>
+        `).join('');
+    }
+}
+
+function renderReorderMode(workouts) {
+    const list = document.getElementById('workouts-list');
+    list.innerHTML = `
+        <div id="reorder-list" class="list-group" style="touch-action: none;">
+            ${workouts.map((w, i) => `
+                <div class="list-item reorder-item" draggable="true" data-index="${i}" style="cursor: grab;">
+                    <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                        <svg style="width: 20px; height: 20px; color: var(--text-muted); flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="6" cy="7" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="6" cy="17" r="2"/>
+                            <circle cx="12" cy="7" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="17" r="2"/>
+                        </svg>
+                        <div style="flex: 1;">
+                            <div class="list-item-title">${w.name}</div>
+                            <div class="list-item-subtitle">${(w.exercises || []).join(', ') || 'No exercises'}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+
+    setupDragAndDrop();
+}
+
+function setupDragAndDrop() {
+    const items = document.querySelectorAll('.reorder-item');
+    let draggedItem = null;
+
+    items.forEach(item => {
+        item.addEventListener('dragstart', (e) => {
+            draggedItem = item;
+            item.style.opacity = '0.5';
+        });
+
+        item.addEventListener('dragend', () => {
+            items.forEach(i => i.style.opacity = '1');
+            draggedItem = null;
+        });
+
+        item.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (draggedItem && draggedItem !== item) {
+                const rect = item.getBoundingClientRect();
+                const midpoint = rect.y + rect.height / 2;
+                if (e.clientY < midpoint) {
+                    item.parentNode.insertBefore(draggedItem, item);
+                } else {
+                    item.parentNode.insertBefore(draggedItem, item.nextSibling);
+                }
+            }
+        });
+    });
+}
+
+function toggleReorder() {
+    isReordering = !isReordering;
+    const btn = document.getElementById('reorder-btn');
+
+    if (isReordering) {
+        btn.textContent = 'Done';
+        btn.classList.remove('btn-ghost');
+        btn.classList.add('btn-primary');
+        document.getElementById('edit-btn').style.display = 'none';
+        loadProgram();
+    } else {
+        saveReorderAndClose();
+    }
+}
+
+async function saveReorderAndClose() {
+    const items = document.querySelectorAll('.reorder-item');
+    const newOrder = Array.from(items).map((item, idx) => {
+        const workoutIndex = parseInt(item.dataset.index);
+        return program.workouts[workoutIndex].id;
+    });
+
+    try {
+        await api.put(`/api/programs/${programId}/order`, { workout_ids: newOrder });
+        isReordering = false;
+        await loadProgram();
+        document.getElementById('reorder-btn').textContent = 'Reorder';
+        document.getElementById('reorder-btn').classList.remove('btn-primary');
+        document.getElementById('reorder-btn').classList.add('btn-ghost');
+        document.getElementById('edit-btn').style.display = '';
+        showToast('Workout order updated', 'success');
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+function toggleEdit() {
+    isEditing = !isEditing;
+    document.getElementById('edit-fields').classList.toggle('hidden', !isEditing);
+    document.getElementById('edit-btn').textContent = isEditing ? 'Cancel' : 'Edit';
+}
+
+async function saveEdit() {
+    const name = document.getElementById('edit-name').value.trim();
+    if (!name) { showToast('Name is required', 'error'); return; }
+
+    await api.put(`/api/programs/${programId}`, { name });
+    showToast('Program updated', 'success');
+    toggleEdit();
+    loadProgram();
+}
+
+async function deleteProgram() {
+    if (await showConfirm('Delete this program?')) {
+        await api.delete(`/api/programs/${programId}`);
+        showToast('Program deleted', 'success');
+        window.location.href = SCRIPT_ROOT + '/programs';
+    }
+}
+
+let selectedWorkoutId = null;
+
+async function showAddWorkout() {
+    selectedWorkoutId = null;
+    const workouts = await api.get('/api/workouts');
+    const existingIds = (program.workouts || []).map(w => w.id);
+    const available = workouts.filter(w => !existingIds.includes(w.id));
+
+    const container = document.getElementById('available-workouts');
+    if (available.length) {
+        container.innerHTML = `
+            <label class="text-sm text-muted">Existing workouts</label>
+            ${available.map(w => `
+                <div class="list-item" style="padding: 10px 0; border-bottom: 1px solid var(--border);"
+                     onclick="selectWorkout(${w.id}, this)" id="aw-${w.id}">
+                    <span>${w.name}</span>
+                </div>
+            `).join('')}
+        `;
+    } else {
+        container.innerHTML = '<p class="text-sm text-muted">No existing workouts available</p>';
+    }
+
+    document.getElementById('new-workout-name').value = '';
+    document.getElementById('workout-modal').classList.remove('hidden');
+}
+
+function selectWorkout(id, el) {
+    document.querySelectorAll('#available-workouts .list-item').forEach(e => e.style.background = '');
+    el.style.background = 'var(--accent-dim)';
+    selectedWorkoutId = id;
+    document.getElementById('new-workout-name').value = '';
+}
+
+function closeWorkoutModal() {
+    document.getElementById('workout-modal').classList.add('hidden');
+}
+
+async function addWorkout() {
+    let workoutId = selectedWorkoutId;
+    const newName = document.getElementById('new-workout-name').value.trim();
+
+    if (!workoutId && !newName) {
+        showToast('Select or create a workout', 'error');
+        return;
+    }
+
+    if (newName) {
+        const w = await api.post('/api/workouts', { name: newName });
+        workoutId = w.id;
+    }
+
+    const currentIds = (program.workouts || []).map(w => w.id);
+    currentIds.push(workoutId);
+    await api.put(`/api/programs/${programId}/order`, { workout_ids: currentIds });
+
+    closeWorkoutModal();
+    showToast('Workout added', 'success');
+    loadProgram();
+}
+
+document.getElementById('workout-modal').addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) closeWorkoutModal();
+});
+
+// Reload program when page gains focus (after navigating back)
+window.addEventListener('pageshow', () => {
+    loadProgram();
+});
+
+loadProgram();
+</script>
+{% endblock %}

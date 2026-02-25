@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Plan Dinner - Meal Planner{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div style="text-align: center; margin-bottom: var(--spacing-xl);">
+    <h1 style="margin: 0 0 var(--spacing-sm) 0;">📅 Plan {{ meal_type.title() }}</h1>
+    <p style="color: #666; margin: 0; font-size: 1.125rem;">
+        {{ date.strftime('%A, %B %d, %Y') }}
+    </p>
+</div>
+
+<!-- Form -->
+<div style="max-width: 600px; margin: 0 auto;">
+    <div class="card">
+        <div style="padding: var(--spacing-lg);">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <!-- PRIMARY: Paste Recipe URL -->
+                <div class="form-group">
+                    <label class="form-label" style="font-weight: 600; font-size: 1.1rem; color: var(--sage-green);">
+                        Paste a Recipe URL
+                    </label>
+                    {% if form.url.errors %}
+                        {{ form.url(class="form-control", style="border-color: #dc3545; padding: 12px 16px; font-size: 1rem;", placeholder="https://www.example.com/recipe") }}
+                        <small class="form-text" style="color: #dc3545;">
+                            {% for error in form.url.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </small>
+                    {% else %}
+                        {{ form.url(class="form-control", style="padding: 12px 16px; font-size: 1rem; border: 2px solid var(--sage-green);", placeholder="https://www.example.com/recipe") }}
+                    {% endif %}
+                    <small class="form-help" style="color: #666; margin-top: 0.5rem;">
+                        💡 We'll import the recipe automatically and save it to your library
+                    </small>
+                </div>
+
+                <!-- Divider -->
+                <div style="text-align: center; margin: var(--spacing-lg) 0; color: #999; font-style: italic;">
+                    <div style="display: flex; align-items: center; gap: var(--spacing-md);">
+                        <div style="flex: 1; height: 1px; background: #ddd;"></div>
+                        <span style="padding: 0 var(--spacing-md);">or</span>
+                        <div style="flex: 1; height: 1px; background: #ddd;"></div>
+                    </div>
+                </div>
+
+                <!-- SECONDARY: Smart Search + Quick Access -->
+                <div class="form-group">
+                    <label class="form-label" style="font-weight: 500; opacity: 0.9;">
+                        Choose from Your Recipes
+                    </label>
+
+                    <!-- Quick Access: Recent Meals -->
+                    {% if recent_meals %}
+                        <div style="margin-bottom: var(--spacing-md);">
+                            <small style="color: #999; display: block; margin-bottom: var(--spacing-sm); font-weight: 500;">🔥 Recent meals</small>
+                            <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm);">
+                                {% for meal in recent_meals %}
+                                    <button type="button" class="meal-quick-pick"
+                                            onclick="selectQuickMeal(event, {{ meal.id }}, '{{ meal.name }}')">
+                                        {{ meal.name[:20] }}{% if meal.name|length > 20 %}...{% endif %}
+                                    </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Search Field -->
+                    <div style="position: relative;">
+                        <input type="text" id="meal-search" class="form-control"
+                               placeholder="Search your recipes..."
+                               style="padding: 12px 15px; font-size: 1rem; min-height: 48px;"
+                               oninput="searchMeals(this.value)">
+
+                        <!-- Live Results Dropdown -->
+                        <div id="search-results" class="meal-search-results" style="display: none;">
+                        </div>
+                    </div>
+
+                    <small class="form-help">Type to search or click a recent recipe above</small>
+                </div>
+
+                <!-- Hidden meal_id field (populated by selection) -->
+                {{ form.meal_id(style="display: none;") }}
+
+                <!-- Divider -->
+                <div style="text-align: center; margin: var(--spacing-lg) 0; color: #999; font-style: italic;">
+                    <div style="display: flex; align-items: center; gap: var(--spacing-md);">
+                        <div style="flex: 1; height: 1px; background: #ddd;"></div>
+                        <span style="padding: 0 var(--spacing-md);">or</span>
+                        <div style="flex: 1; height: 1px; background: #ddd;"></div>
+                    </div>
+                </div>
+
+                <!-- TERTIARY: Custom Entry -->
+                <div class="form-group">
+                    <label class="form-label" style="font-weight: 500; opacity: 0.8;">
+                        Something Else
+                    </label>
+                    {{ form.custom_entry(class="form-control", style="opacity: 0.8;", placeholder="e.g., Leftovers, Out to eat, Order pizza...") }}
+                    <small class="form-help">Enter anything you're planning to cook or eat</small>
+                </div>
+
+                <!-- Buttons -->
+                <div style="display: flex; gap: var(--spacing-md); margin-top: var(--spacing-lg);">
+                    {{ form.submit(class="btn btn-primary", style="flex: 1;", value="Save Meal") }}
+                    <a href="{{ url_for('planner.index') }}" class="btn btn-soft" style="flex: 1;">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Helpful Tips -->
+    <div style="margin-top: var(--spacing-lg); padding: var(--spacing-md); background-color: rgba(135, 168, 120, 0.08); border-left: 4px solid var(--sage-green); border-radius: var(--radius-md);">
+        <p style="margin: 0; color: #666; font-size: 0.875rem;">
+            <strong>💡 Quick tips:</strong>
+        </p>
+        <ul style="margin: 0.5rem 0 0 0; padding-left: 1.25rem; font-size: 0.875rem; color: #666;">
+            <li>Paste any recipe URL to auto-import</li>
+            <li>If import fails, we'll save the URL as a reminder</li>
+            <li>After saving, you'll return to your weekly plan</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+.meal-quick-pick {
+    background: linear-gradient(135deg, var(--honey-gold) 0%, var(--terracotta) 100%);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.meal-quick-pick:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(224, 122, 95, 0.3);
+}
+
+.meal-search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--light-gray);
+    border-top: none;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 10;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.meal-search-result {
+    display: block;
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: none;
+    border-bottom: 1px solid var(--light-gray);
+    background: white;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.meal-search-result:last-child {
+    border-bottom: none;
+}
+
+.meal-search-result:hover {
+    background: #f8f5f0;
+}
+
+.meal-result-name {
+    font-weight: 500;
+    color: var(--charcoal);
+    font-size: 0.95rem;
+}
+
+.meal-result-meta {
+    font-size: 0.75rem;
+    color: #999;
+    margin-top: 0.25rem;
+}
+</style>
+
+<script>
+function selectMeal(mealId, mealName) {
+    var form = document.querySelector('form');
+    form.querySelector('select[name="meal_id"]').value = mealId;
+    form.querySelector('input[name="url"]').value = '';
+    document.querySelector('#search-results').style.display = 'none';
+    HTMLFormElement.prototype.submit.call(form);
+}
+
+function selectQuickMeal(event, mealId, mealName) {
+    event.preventDefault();
+    selectMeal(mealId, mealName);
+}
+
+function searchMeals(query) {
+    const resultsDiv = document.querySelector('#search-results');
+
+    if (!query.trim() || query.length < 2) {
+        resultsDiv.style.display = 'none';
+        return;
+    }
+
+    fetch(`{{ url_for('planner.search_meals') }}?q=${encodeURIComponent(query)}`)
+        .then(r => r.json())
+        .then(meals => {
+            if (meals.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div style="padding: var(--spacing-md); text-align: center; color: #999;">
+                        No recipes found matching "${query}"
+                    </div>
+                `;
+            } else {
+                resultsDiv.innerHTML = meals.map(meal => `
+                    <button type="button" class="meal-search-result"
+                            data-meal-id="${meal.id}"
+                            data-meal-name="${meal.name.replace(/"/g, '&quot;')}">
+                        <div class="meal-result-name">${meal.name}</div>
+                        <div class="meal-result-meta">${meal.category}</div>
+                    </button>
+                `).join('');
+
+                resultsDiv.querySelectorAll('.meal-search-result').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        selectMeal(this.dataset.mealId, this.dataset.mealName);
+                    });
+                });
+            }
+            resultsDiv.style.display = 'block';
+        });
+}
+
+// Close search results when clicking outside
+document.addEventListener('click', function(event) {
+    const searchInput = document.querySelector('#meal-search');
+    const resultsDiv = document.querySelector('#search-results');
+    if (searchInput && resultsDiv && !searchInput.contains(event.target) && !resultsDiv.contains(event.target)) {
+        resultsDiv.style.display = 'none';
+    }
+});
+
+// Close results on Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        document.querySelector('#search-results').style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

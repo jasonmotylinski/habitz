@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Join Household - Meal Planner{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 0 auto; padding: var(--spacing-xl);">
+    <div style="text-align: center; margin-bottom: var(--spacing-xl);">
+        <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">👥</div>
+        <h1 style="margin: 0 0 var(--spacing-sm) 0;">Join Household</h1>
+        <p style="color: #666; margin: 0;">You're invited to join a household</p>
+    </div>
+
+    <div class="card" style="margin-bottom: var(--spacing-lg);">
+        <div style="padding: var(--spacing-lg); text-align: center;">
+            <h2 style="margin: 0 0 var(--spacing-sm) 0; color: var(--sage-green);">{{ household.name }}</h2>
+            <p style="color: #666; margin: 0; font-size: 0.875rem;">
+                Created by <strong>{{ invite.creator.username }}</strong>
+            </p>
+            {% if invite.expires_at %}
+                <p style="color: #999; margin: var(--spacing-sm) 0 0 0; font-size: 0.875rem;">
+                    ⏰ Invite expires: {{ invite.expires_at.strftime('%B %d at %I:%M %p') }}
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div style="background: rgba(135, 168, 120, 0.1); padding: var(--spacing-lg); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg); border-left: 4px solid var(--sage-green);">
+        <p style="margin: 0; color: #666; font-size: 0.875rem;">
+            <strong>What this means:</strong> You'll be able to see and edit the meal plans, shopping lists, and recipes shared with this household.
+        </p>
+    </div>
+
+    <form method="POST" style="display: flex; gap: var(--spacing-sm); flex-direction: column;">
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+            ✓ Join Household
+        </button>
+        <a href="{{ url_for('main.index') }}" class="btn btn-soft" style="width: 100%; text-align: center;">
+            Cancel
+        </a>
+    </form>
+
+    <p style="text-align: center; color: #999; font-size: 0.875rem; margin-top: var(--spacing-lg);">
+        If this link is invalid or expired, ask the household creator to send you a new one.
+    </p>
+</div>
+{% endblock %}

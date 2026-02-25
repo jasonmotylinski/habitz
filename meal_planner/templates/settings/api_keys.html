@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}API Keys - Settings{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto; padding: var(--spacing-xl);">
+    <!-- Header -->
+    <div style="margin-bottom: var(--spacing-xl);">
+        <h1 style="margin: 0 0 var(--spacing-xs) 0;">🔑 API Keys</h1>
+        <p style="color: #666; margin: 0;">Manage API keys for external integrations</p>
+    </div>
+
+    <!-- Create Key Section -->
+    <div class="card" style="margin-bottom: var(--spacing-xl);">
+        <div style="padding: var(--spacing-lg);">
+            <h3 style="margin-top: 0; font-family: var(--font-heading);">Create New API Key</h3>
+            <form method="POST" action="{{ url_for('settings.create_api_key') }}">
+                <div class="form-group">
+                    <label for="name" class="form-label">Key Name</label>
+                    <input type="text" id="name" name="name" class="form-control"
+                           placeholder="e.g., Claude Integration" required
+                           style="padding: 12px 15px; font-size: 1rem;">
+                    <small style="color: #999;">Give this key a friendly name</small>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    Create API Key
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- API Keys List -->
+    <div class="card">
+        <div style="padding: var(--spacing-lg);">
+            <h3 style="margin-top: 0; font-family: var(--font-heading);">Your API Keys</h3>
+
+            {% if api_keys %}
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--light-gray);">
+                                <th style="text-align: left; padding: var(--spacing-sm); font-weight: 600;">Name</th>
+                                <th style="text-align: left; padding: var(--spacing-sm); font-weight: 600;">Created</th>
+                                <th style="text-align: left; padding: var(--spacing-sm); font-weight: 600;">Last Used</th>
+                                <th style="text-align: left; padding: var(--spacing-sm); font-weight: 600;">Status</th>
+                                <th style="text-align: right; padding: var(--spacing-sm); font-weight: 600;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for key in api_keys %}
+                            <tr style="border-bottom: 1px solid var(--light-gray);">
+                                <td style="padding: var(--spacing-sm);">
+                                    <strong>{{ key.name }}</strong>
+                                    {% if key.id == last_created_id %}
+                                        <br>
+                                        <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; word-break: break-all;">
+                                            {{ last_created_key }}
+                                        </code>
+                                        <small style="color: var(--sage-green); display: block; margin-top: 4px;">✓ Copy above key now (won't be shown again)</small>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: var(--spacing-sm); color: #666; font-size: 0.875rem;">
+                                    {{ key.created_at.strftime('%b %d, %Y') }}
+                                </td>
+                                <td style="padding: var(--spacing-sm); color: #666; font-size: 0.875rem;">
+                                    {% if key.last_used %}
+                                        {{ key.last_used.strftime('%b %d, %Y') }}
+                                    {% else %}
+                                        Never
+                                    {% endif %}
+                                </td>
+                                <td style="padding: var(--spacing-sm);">
+                                    {% if key.is_active %}
+                                        <span style="color: var(--sage-green); font-weight: 600;">Active</span>
+                                    {% else %}
+                                        <span style="color: #999;">Disabled</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: var(--spacing-sm); text-align: right;">
+                                    {% if key.is_active %}
+                                        <form method="POST" action="{{ url_for('settings.disable_api_key', key_id=key.id) }}"
+                                              style="display: inline;"
+                                              onsubmit="return confirm('Disable this key?');">
+                                            <button type="submit" class="btn btn-soft" style="padding: 6px 12px; font-size: 0.875rem;">
+                                                Disable
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    <form method="POST" action="{{ url_for('settings.delete_api_key', key_id=key.id) }}"
+                                          style="display: inline;"
+                                          onsubmit="return confirm('Delete this key? This cannot be undone.');">
+                                        <button type="submit" class="btn btn-soft" style="padding: 6px 12px; font-size: 0.875rem; color: var(--terracotta);">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p style="color: #999; text-align: center; padding: var(--spacing-lg);">
+                    No API keys yet. Create one to get started.
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Usage Info -->
+    <div style="margin-top: var(--spacing-xl); padding: var(--spacing-lg); background: linear-gradient(135deg, rgba(135, 168, 120, 0.08) 0%, rgba(244, 162, 97, 0.08) 100%); border-radius: 8px; border-left: 4px solid var(--sage-green);">
+        <h3 style="font-family: var(--font-heading); margin-top: 0; margin-bottom: var(--spacing-sm);">💡 How to Use</h3>
+        <p style="margin: 0 0 var(--spacing-sm) 0; color: #666;">
+            Add the API key to your requests with the <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">X-API-Key</code> header:
+        </p>
+        <pre style="background: #f5f3f0; padding: var(--spacing-md); border-radius: 6px; overflow-x: auto; margin: 0;">curl -H "X-API-Key: YOUR_KEY_HERE" \
+  https://your-domain.com/api/recipes</pre>
+    </div>
+
+    <!-- Back Link -->
+    <div style="text-align: center; margin-top: var(--spacing-xl);">
+        <a href="{{ url_for('main.index') }}" style="color: var(--sage-green); text-decoration: none; font-weight: 500;">
+            ← Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

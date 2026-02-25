@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Settings — Fasting Tracker{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <div class="settings-header">
+        <h1 class="settings-title">Settings</h1>
+    </div>
+
+    <form method="POST" class="settings-form">
+        {{ form.hidden_tag() }}
+
+        <!-- Account Info -->
+        <div class="settings-section">
+            <h2 class="settings-section-title">Account</h2>
+            <div class="settings-info-card">
+                <div class="settings-info-row">
+                    <span class="settings-info-label">Username</span>
+                    <span class="settings-info-value">{{ current_user.username }}</span>
+                </div>
+                <div class="settings-info-row">
+                    <span class="settings-info-label">Email</span>
+                    <span class="settings-info-value">{{ current_user.email }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fasting Goals -->
+        <div class="settings-section">
+            <h2 class="settings-section-title">Fasting Goals</h2>
+
+            <div class="form-group">
+                <label class="form-label" for="default_fast_hours">Default fast duration (hours)</label>
+                {{ form.default_fast_hours(class="form-input", id="default_fast_hours") }}
+                {% for error in form.default_fast_hours.errors %}
+                <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--full">Save Settings</button>
+    </form>
+</div>
+{% endblock %}

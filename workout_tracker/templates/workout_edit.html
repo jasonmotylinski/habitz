@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+{% block title %}Edit Workout - Workout Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <button class="back-btn" onclick="history.back()">‹ Back</button>
+    <button class="btn btn-ghost" id="edit-btn" onclick="toggleEdit()">Edit</button>
+</div>
+
+<div id="workout-name-display" class="mb-4">
+    <h1 id="workout-title"></h1>
+</div>
+
+<div id="edit-name-field" class="hidden mb-4">
+    <div class="form-group">
+        <label>Workout Name</label>
+        <input type="text" id="edit-name" class="form-control">
+    </div>
+    <button class="btn btn-primary btn-block" onclick="saveName()">Save Name</button>
+</div>
+
+<div class="card-title">Exercises</div>
+<div id="exercises-list" class="list-group"></div>
+
+<div class="mt-4">
+    <button class="btn btn-primary btn-block" onclick="showAddExercise()">Add Exercise</button>
+</div>
+
+<div class="mt-4">
+    <button class="btn btn-danger btn-block" onclick="deleteWorkout()">Remove Workout</button>
+</div>
+
+<!-- Add Exercise Modal -->
+<div id="exercise-modal" class="modal-overlay hidden">
+    <div class="modal">
+        <h2 id="exercise-modal-title">Add Exercise</h2>
+
+        <div id="existing-exercises"></div>
+
+        <div class="form-group mt-4">
+            <label>Or create new exercise</label>
+            <input type="text" id="new-exercise-name" class="form-control" placeholder="e.g. Squat">
+        </div>
+        <div class="form-group">
+            <label>Type</label>
+            <select id="new-exercise-type" class="form-control">
+                <option value="strength">Strength</option>
+                <option value="cardio">Cardio</option>
+            </select>
+        </div>
+
+        <div id="strength-fields">
+            <div class="form-group">
+                <label>Unit of measure</label>
+                <select id="ex-unit" class="form-control">
+                    <option value="reps">Reps</option>
+                    <option value="secs">Seconds</option>
+                    <option value="mins">Minutes</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Sets</label>
+                    <input type="number" id="ex-sets" class="form-control" value="5" min="1">
+                </div>
+                <div class="form-group">
+                    <label id="ex-reps-label">Reps</label>
+                    <input type="number" id="ex-reps" class="form-control" value="5" min="1">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Weight (lb)</label>
+                <input type="number" id="ex-weight" class="form-control" step="2.5" placeholder="Optional">
+            </div>
+        </div>
+
+        <div id="cardio-fields" class="hidden">
+            <div class="form-group">
+                <label>Duration (minutes)</label>
+                <input type="number" id="ex-duration" class="form-control" value="30" min="1">
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeExerciseModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="addExercise()">Add</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Exercise Modal -->
+<div id="edit-exercise-modal" class="modal-overlay hidden">
+    <div class="modal">
+        <h2>Edit Exercise</h2>
+        <div class="form-group">
+            <label>Exercise Name</label>
+            <input type="text" id="edit-ex-name" class="form-control">
+        </div>
+        <div id="edit-ex-strength-fields">
+            <div class="form-group">
+                <label>Unit of measure</label>
+                <select id="edit-ex-unit" class="form-control">
+                    <option value="reps">Reps</option>
+                    <option value="secs">Seconds</option>
+                    <option value="mins">Minutes</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Sets</label>
+                    <input type="number" id="edit-ex-sets" class="form-control" min="1">
+                </div>
+                <div class="form-group">
+                    <label id="edit-ex-reps-label">Reps</label>
+                    <input type="number" id="edit-ex-reps" class="form-control" min="1">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Weight (lb)</label>
+                <input type="number" id="edit-ex-weight" class="form-control" step="2.5">
+            </div>
+        </div>
+        <div id="edit-ex-cardio-fields" class="hidden">
+            <div class="form-group">
+                <label>Duration (minutes)</label>
+                <input type="number" id="edit-ex-duration" class="form-control" min="1">
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-danger" id="edit-ex-delete" onclick="deleteExerciseFromWorkout()">Remove</button>
+            <button class="btn btn-ghost" onclick="closeEditExerciseModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveExerciseEdit()">Save</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const workoutId = {{ workout_id }};
+let workout = null;
+let isEditing = false;
+let selectedExerciseId = null;
+let editingWeId = null;
+
+async function loadWorkout() {
+    workout = await api.get(`/api/workouts/${workoutId}`);
+    document.getElementById('workout-title').textContent = workout.name;
+    document.getElementById('edit-name').value = workout.name;
+
+    const list = document.getElementById('exercises-list');
+    const exercises = workout.exercises || [];
+
+    if (!exercises.length) {
+        list.innerHTML = `<div class="list-action" onclick="showAddExercise()">Add your first exercise</div>`;
+        return;
+    }
+
+    list.innerHTML = exercises.map(ex => `
+        <div class="list-item" onclick="showEditExercise(${ex.id}, '${ex.exercise_type}', ${ex.default_sets}, ${ex.default_reps}, ${ex.default_weight || 'null'}, ${ex.default_duration_minutes || 'null'}, '${ex.unit || 'reps'}', '${ex.exercise_name.replace(/'/g, "\\'")}')">
+            <div>
+                <div class="list-item-title">${ex.exercise_name}</div>
+                <div class="list-item-subtitle">${formatSetsReps(ex)}</div>
+            </div>
+            <span class="list-item-chevron">›</span>
+        </div>
+    `).join('');
+}
+
+function toggleEdit() {
+    isEditing = !isEditing;
+    document.getElementById('edit-name-field').classList.toggle('hidden', !isEditing);
+    document.getElementById('edit-btn').textContent = isEditing ? 'Cancel' : 'Edit';
+}
+
+async function saveName() {
+    const name = document.getElementById('edit-name').value.trim();
+    if (!name) { showToast('Name is required', 'error'); return; }
+    await api.put(`/api/workouts/${workoutId}`, { name });
+    showToast('Name updated', 'success');
+    toggleEdit();
+    loadWorkout();
+}
+
+async function deleteWorkout() {
+    if (await showConfirm('Delete this workout?')) {
+        await api.delete(`/api/workouts/${workoutId}`);
+        showToast('Workout deleted', 'success');
+        history.back();
+    }
+}
+
+// Type toggle
+document.getElementById('new-exercise-type').addEventListener('change', (e) => {
+    const isCardio = e.target.value === 'cardio';
+    document.getElementById('strength-fields').classList.toggle('hidden', isCardio);
+    document.getElementById('cardio-fields').classList.toggle('hidden', !isCardio);
+});
+
+// Unit label toggle
+document.getElementById('ex-unit').addEventListener('change', (e) => {
+    const unit = e.target.value;
+    const labels = { reps: 'Reps', secs: 'Seconds', mins: 'Minutes' };
+    document.getElementById('ex-reps-label').textContent = labels[unit];
+});
+
+document.getElementById('edit-ex-unit').addEventListener('change', (e) => {
+    const unit = e.target.value;
+    const labels = { reps: 'Reps', secs: 'Seconds', mins: 'Minutes' };
+    document.getElementById('edit-ex-reps-label').textContent = labels[unit];
+});
+
+async function showAddExercise() {
+    selectedExerciseId = null;
+    document.getElementById('existing-exercises').innerHTML = '';
+    document.getElementById('new-exercise-name').value = '';
+    document.getElementById('exercise-modal').classList.remove('hidden');
+}
+
+function closeExerciseModal() {
+    document.getElementById('exercise-modal').classList.add('hidden');
+}
+
+async function addExercise() {
+    let exerciseId = selectedExerciseId;
+    const newName = document.getElementById('new-exercise-name').value.trim();
+    const exType = document.getElementById('new-exercise-type').value;
+
+    if (!exerciseId && !newName) {
+        showToast('Select or create an exercise', 'error');
+        return;
+    }
+
+    if (newName) {
+        const unit = exType === 'strength' ? document.getElementById('ex-unit').value : 'reps';
+        const e = await api.post('/api/exercises', { name: newName, type: exType, unit });
+        exerciseId = e.id;
+    }
+
+    const payload = { exercise_id: exerciseId };
+    if (exType === 'cardio') {
+        payload.default_sets = 1;
+        payload.default_reps = 1;
+        payload.default_duration_minutes = parseInt(document.getElementById('ex-duration').value) || 30;
+    } else {
+        payload.default_sets = parseInt(document.getElementById('ex-sets').value) || 5;
+        payload.default_reps = parseInt(document.getElementById('ex-reps').value) || 5;
+        payload.unit = document.getElementById('ex-unit').value;
+        const w = document.getElementById('ex-weight').value;
+        if (w) payload.default_weight = parseFloat(w);
+    }
+
+    const body = { ...payload };
+    if (newName) {
+        body.exercise_name = newName;
+        body.exercise_type = exType;
+        body.unit = payload.unit || 'reps';
+    }
+
+    await api.post(`/api/workouts/${workoutId}/exercises`, payload);
+    closeExerciseModal();
+    showToast('Exercise added', 'success');
+    loadWorkout();
+}
+
+function showEditExercise(weId, type, sets, reps, weight, duration, unit, name) {
+    editingWeId = weId;
+    const isCardio = type === 'cardio';
+    document.getElementById('edit-ex-strength-fields').classList.toggle('hidden', isCardio);
+    document.getElementById('edit-ex-cardio-fields').classList.toggle('hidden', !isCardio);
+
+    document.getElementById('edit-ex-name').value = name || '';
+
+    if (isCardio) {
+        document.getElementById('edit-ex-duration').value = duration || 30;
+    } else {
+        document.getElementById('edit-ex-sets').value = sets;
+        document.getElementById('edit-ex-reps').value = reps;
+        document.getElementById('edit-ex-weight').value = weight || '';
+        const unitVal = unit || 'reps';
+        document.getElementById('edit-ex-unit').value = unitVal;
+        const labels = { reps: 'Reps', secs: 'Seconds', mins: 'Minutes' };
+        document.getElementById('edit-ex-reps-label').textContent = labels[unitVal];
+    }
+
+    document.getElementById('edit-exercise-modal').classList.remove('hidden');
+}
+
+function closeEditExerciseModal() {
+    document.getElementById('edit-exercise-modal').classList.add('hidden');
+}
+
+async function saveExerciseEdit() {
+    const payload = {};
+    const newName = document.getElementById('edit-ex-name').value.trim();
+
+    if (newName) {
+        payload.exercise_name = newName;
+    }
+
+    if (!document.getElementById('edit-ex-strength-fields').classList.contains('hidden')) {
+        payload.default_sets = parseInt(document.getElementById('edit-ex-sets').value);
+        payload.default_reps = parseInt(document.getElementById('edit-ex-reps').value);
+        payload.unit = document.getElementById('edit-ex-unit').value;
+        const w = document.getElementById('edit-ex-weight').value;
+        payload.default_weight = w ? parseFloat(w) : null;
+    } else {
+        payload.default_duration_minutes = parseInt(document.getElementById('edit-ex-duration').value);
+    }
+
+    await api.put(`/api/workouts/${workoutId}/exercises/${editingWeId}`, payload);
+    closeEditExerciseModal();
+    showToast('Exercise updated', 'success');
+    loadWorkout();
+}
+
+async function deleteExerciseFromWorkout() {
+    await api.delete(`/api/workouts/${workoutId}/exercises/${editingWeId}`);
+    closeEditExerciseModal();
+    showToast('Exercise removed', 'success');
+    loadWorkout();
+}
+
+document.getElementById('exercise-modal').addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) closeExerciseModal();
+});
+document.getElementById('edit-exercise-modal').addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) closeEditExerciseModal();
+});
+
+loadWorkout();
+</script>
+{% endblock %}

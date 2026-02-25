@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Calorie Tracker — Fuel Your Day{% endblock %}
+
+{% block content %}
+<div class="landing">
+    <div class="landing-bg">
+        <div class="landing-orb landing-orb--1"></div>
+        <div class="landing-orb landing-orb--2"></div>
+        <div class="landing-orb landing-orb--3"></div>
+    </div>
+
+    <div class="landing-content">
+        <div class="landing-logo">
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                <circle cx="32" cy="32" r="28" stroke="var(--green-500)" stroke-width="4" stroke-linecap="round" stroke-dasharray="12 8" opacity="0.6"/>
+                <circle cx="32" cy="32" r="18" stroke="var(--green-600)" stroke-width="5" stroke-linecap="round" stroke-dashoffset="20" stroke-dasharray="80 200"/>
+                <circle cx="32" cy="32" r="6" fill="var(--terra)"/>
+            </svg>
+        </div>
+
+        <h1 class="landing-title">
+            Track your<br>
+            <span class="landing-title--accent">nutrition</span>,<br>
+            effortlessly.
+        </h1>
+
+        <p class="landing-subtitle">
+            Simple calorie and macro tracking that fits your life.
+            No complexity, no guilt — just clarity.
+        </p>
+
+        <div class="landing-actions">
+            <a href="{{ url_for('auth.register') }}" class="btn btn--primary btn--lg">Get Started</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn--ghost btn--lg">Log In</a>
+        </div>
+
+        <div class="landing-features">
+            <div class="landing-feature">
+                <div class="landing-feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                </div>
+                <span>Quick logging</span>
+            </div>
+            <div class="landing-feature">
+                <div class="landing-feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                </div>
+                <span>Weekly insights</span>
+            </div>
+            <div class="landing-feature">
+                <div class="landing-feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </div>
+                <span>Food database</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

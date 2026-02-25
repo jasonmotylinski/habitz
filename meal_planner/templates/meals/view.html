@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}{{ meal.name }} - Meal Planner{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('meals.library') }}" class="btn btn-soft" style="white-space: nowrap; margin-bottom: var(--spacing-md);">← Back</a>
+
+<div class="meal-detail">
+    <!-- Header -->
+    <div class="meal-header">
+        {% if meal.image_filename %}
+            {% if meal.image_filename.startswith('http') %}
+                <img src="{{ meal.image_filename }}" class="meal-image" alt="{{ meal.name }}">
+            {% else %}
+                <img src="{{ url_for('static', filename='uploads/' + meal.image_filename) }}" class="meal-image" alt="{{ meal.name }}">
+            {% endif %}
+        {% else %}
+            <div class="meal-image" style="background: linear-gradient(135deg, var(--light-gray) 0%, #d8d3cc 100%); display: flex; align-items: center; justify-content: center;">
+                <span style="color: #999; font-size: 5rem;">🍽️</span>
+            </div>
+        {% endif %}
+
+        <div class="meal-info">
+            <h1 class="meal-title">{{ meal.name }}</h1>
+            {% if meal.category %}
+                <span style="display: inline-block; background-color: var(--sage-green); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.875rem; margin-bottom: var(--spacing-sm);">
+                    📂 {{ meal.category }}
+                </span>
+            {% endif %}
+            {% if meal.description %}
+                <p class="meal-description">{{ meal.description }}</p>
+            {% endif %}
+
+            <div class="meal-actions">
+                <div class="meal-actions-primary">
+                    {% if current_user.household_id == meal.household_id %}
+                        <a href="{{ url_for('meals.edit', id=meal.id) }}" class="btn btn-soft">✏️ Edit Recipe</a>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('meals.toggle_favorite', id=meal.id) }}" class="meal-actions-form">
+                        <button type="submit" class="btn btn-soft">
+                            {% if is_favorite %}★{% else %}☆{% endif %} {{ 'Favorited' if is_favorite else 'Add to Favorites' }}
+                        </button>
+                    </form>
+                </div>
+                {% if current_user.household_id == meal.household_id %}
+                    <form method="POST" action="{{ url_for('meals.delete', id=meal.id) }}" class="meal-actions-delete" onsubmit="return confirm('Are you sure? This can\'t be undone.');">
+                        <button type="submit" class="btn btn-delete">🗑️ Delete</button>
+                    </form>
+                {% endif %}
+            </div>
+
+            <small style="color: #888;">
+                Added by <strong>{{ meal.creator.username }}</strong> on {{ meal.created_at.strftime('%B %d, %Y') }}
+                {% if meal.source_url %}
+                    <br>
+                    📎 <a href="{{ meal.source_url }}" target="_blank" rel="noopener noreferrer" style="color: var(--sage-green); text-decoration: none; font-weight: 500;">
+                        Recipe from {{ meal.source_name }}
+                    </a>
+                {% endif %}
+            </small>
+        </div>
+    </div>
+
+    <!-- Ingredients Section -->
+    <section class="ingredients-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md); gap: var(--spacing-sm); flex-wrap: wrap;">
+            <h4 style="margin: 0;">🥘 Ingredients</h4>
+            {% if current_user.household %}
+                <div style="display: flex; gap: var(--spacing-sm);">
+                    <button type="button" id="add-all-ingredients-btn" class="btn btn-sm btn-soft" style="display: none;">
+                        ➕ Add All
+                    </button>
+                    <button type="button" id="add-ingredients-btn" class="btn btn-sm btn-soft" style="display: none;">
+                        ➕ Add Checked to Shopping List
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+
+        <ul class="ingredient-list">
+            {% for ingredient in (meal.ingredients or '').split('\n') if ingredient.strip() %}
+                <li class="ingredient-item">
+                    <input type="checkbox" class="ingredient-checkbox" id="ingredient-{{ loop.index }}" data-ingredient="{{ ingredient.strip() }}">
+                    <label for="ingredient-{{ loop.index }}" class="ingredient-text">{{ ingredient.strip() }}</label>
+                </li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <!-- Modal for selecting shopping list -->
+    <div id="shopping-list-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: var(--radius-lg); padding: var(--spacing-lg); max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
+            <h3 style="margin-top: 0;">Add to Shopping List</h3>
+            <p style="color: #666; margin-bottom: var(--spacing-md);">Select which shopping list to add these items to:</p>
+
+            <div id="shopping-lists-container" style="margin-bottom: var(--spacing-lg); max-height: 300px; overflow-y: auto;">
+                <!-- Populated by JavaScript -->
+            </div>
+
+            <div style="display: flex; gap: var(--spacing-sm);">
+                <button type="button" id="modal-cancel-btn" class="btn btn-soft" style="flex: 1;">Cancel</button>
+                <button type="button" id="modal-confirm-btn" class="btn btn-primary" style="flex: 1;">Add Items</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions Section -->
+    <section class="instructions-section">
+        <h4>👨‍🍳 Instructions</h4>
+        <div class="instructions">
+            {%- for instruction in (meal.instructions or '').split('\n') if instruction.strip() -%}
+{{ loop.index }}. {{ instruction.strip() }}
+{% if not loop.last %}
+{% endif %}
+            {%- endfor -%}
+        </div>
+    </section>
+
+</div>
+
+<!-- Quick Add to Meal Plan Section -->
+{% if current_user.household %}
+<section style="margin-top: var(--spacing-xl); padding: var(--spacing-lg); background: linear-gradient(135deg, rgba(135, 168, 120, 0.1) 0%, rgba(244, 162, 97, 0.1) 100%); border-radius: var(--radius-lg); border-left: 4px solid var(--sage-green);">
+    <h3 style="margin-top: 0;">📅 Add to This Week</h3>
+    <p style="color: #666; margin-bottom: var(--spacing-md);">Quickly add this recipe to your meal plan for any day:</p>
+
+    <div class="quick-add-days" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: var(--spacing-sm);">
+        {% for day_date in week_dates %}
+            {% set day_name = day_date.strftime('%a') %}
+            {% set day_num = day_date.strftime('%d') %}
+            {% set is_today = day_date == today %}
+
+            <a href="{{ url_for('planner.set_meal', date_str=day_date.isoformat(), meal_type='dinner', meal_id=meal.id) }}"
+               class="btn {% if is_today %}btn-primary{% else %}btn-soft{% endif %}"
+               style="text-align: center; padding: var(--spacing-md); transition: all 0.2s ease; min-height: 60px; display: flex; flex-direction: column; justify-content: center;"
+               onmouseover="this.style.transform='translateY(-2px)'"
+               onmouseout="this.style.transform='translateY(0)'">
+                <div style="font-weight: 600; font-size: 0.875rem;">{{ day_name }}</div>
+                <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">{{ day_num }}</div>
+            </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<script>
+// Show/hide "Add to Shopping List" button when checkboxes are checked
+document.querySelectorAll('.ingredient-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', updateAddButton);
+});
+
+function updateAddButton() {
+    const checkedCount = document.querySelectorAll('.ingredient-checkbox:checked').length;
+    const addBtn = document.getElementById('add-ingredients-btn');
+    if (addBtn) {
+        addBtn.style.display = checkedCount > 0 ? 'inline-block' : 'none';
+    }
+}
+
+// Handle "Add All" button click
+const addAllBtn = document.getElementById('add-all-ingredients-btn');
+if (addAllBtn) {
+    addAllBtn.style.display = 'inline-block';
+    addAllBtn.addEventListener('click', function() {
+        const allIngredients = Array.from(
+            document.querySelectorAll('.ingredient-checkbox')
+        ).map(cb => cb.dataset.ingredient);
+
+        if (allIngredients.length === 0) {
+            alert('No ingredients to add');
+            return;
+        }
+
+        showShoppingListModal(allIngredients);
+    });
+}
+
+// Handle "Add Checked to Shopping List" button click
+const addIngredientsBtn = document.getElementById('add-ingredients-btn');
+if (addIngredientsBtn) {
+    addIngredientsBtn.addEventListener('click', function() {
+        const checkedIngredients = Array.from(
+            document.querySelectorAll('.ingredient-checkbox:checked')
+        ).map(cb => cb.dataset.ingredient);
+
+        showShoppingListModal(checkedIngredients);
+    });
+}
+
+function showShoppingListModal(ingredients) {
+    // Use provided ingredients or get checked ones
+    const ingredientsToAdd = ingredients || Array.from(
+        document.querySelectorAll('.ingredient-checkbox:checked')
+    ).map(cb => cb.dataset.ingredient);
+
+    if (ingredientsToAdd.length === 0) {
+        alert('No ingredients to add');
+        return;
+    }
+
+    const modal = document.getElementById('shopping-list-modal');
+    const container = document.getElementById('shopping-lists-container');
+
+    // Fetch all shopping lists via API (don't show modal yet)
+    container.innerHTML = '<p style="text-align: center; color: #999;">Loading shopping lists...</p>';
+
+    fetch(`{{ url_for('shopping.get_shopping_lists') }}`)
+        .then(r => r.json())
+        .then(lists => {
+            // Auto-select if only 1 list (don't show modal)
+            if (lists.length === 1) {
+                selectShoppingList(lists[0].id, lists[0].name, ingredientsToAdd);
+                return;
+            }
+
+            // Show modal only if multiple lists
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            renderShoppingListOptions(lists, ingredientsToAdd, container);
+        })
+        .catch(err => {
+            container.innerHTML = '<p style="text-align: center; color: #c00;">Error loading shopping lists</p>';
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            console.error(err);
+        });
+}
+
+function renderShoppingListOptions(lists, ingredients, container) {
+    if (lists.length === 0) {
+        container.innerHTML = `
+            <p style="text-align: center; color: #999; margin-bottom: var(--spacing-md);">
+                No shopping lists this week. <br>
+                <a href="{{ url_for('shopping.create') }}" style="color: var(--sage-green);">Create one first</a>
+            </p>
+        `;
+        return;
+    }
+
+    let html = '<div style="display: flex; flex-direction: column; gap: var(--spacing-sm);">';
+    lists.forEach(list => {
+        html += `
+            <button type="button" class="shopping-list-option" onclick="selectShoppingList(${list.id}, '${list.name}', ${JSON.stringify(ingredients).replace(/"/g, '&quot;')})" style="
+                padding: var(--spacing-md);
+                text-align: left;
+                background: linear-gradient(135deg, var(--honey-gold) 0%, var(--terracotta) 100%);
+                color: white;
+                border: none;
+                border-radius: var(--radius-md);
+                cursor: pointer;
+                transition: all 0.2s ease;
+                font-weight: 500;
+            " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                ${list.name}
+            </button>
+        `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function selectShoppingList(listId, listName, ingredients) {
+    // Create form data
+    const formData = new FormData();
+    formData.append('shopping_list_id', listId);
+    ingredients.forEach(ingredient => {
+        formData.append('ingredients[]', ingredient);
+    });
+
+    // Submit via AJAX and redirect to shopping list
+    fetch('{{ url_for("shopping.add_ingredients") }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal and redirect to shopping list
+            document.getElementById('shopping-list-modal').style.display = 'none';
+
+            // Show success toast
+            if (window.Toast) {
+                new Toast(`✓ Added ${ingredients.length} items to ${listName}!`, 'success', 3000);
+            }
+
+            // Redirect to shopping list after brief delay
+            setTimeout(() => {
+                window.location.href = `/shopping/${listId}`;
+            }, 500);
+        } else {
+            alert('Error adding ingredients: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error adding ingredients');
+    });
+}
+
+// Modal cancel button
+const modalCancelBtn = document.getElementById('modal-cancel-btn');
+if (modalCancelBtn) {
+    modalCancelBtn.addEventListener('click', function() {
+        document.getElementById('shopping-list-modal').style.display = 'none';
+    });
+}
+
+// Close modal when clicking outside
+document.getElementById('shopping-list-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

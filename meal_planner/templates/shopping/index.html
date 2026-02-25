@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Shopping Lists - Meal Planner{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-lg);">
+    <h1 style="margin: 0;">🛒 Shopping Lists</h1>
+    <a href="{{ url_for('shopping.create') }}" class="btn btn-primary">➕ Create New List</a>
+</div>
+
+{% if shopping_lists %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--spacing-lg);">
+        {% for list in shopping_lists %}
+            <div style="background: white; border: 1px solid var(--light-gray); border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: all 0.2s ease;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05)'">
+                <div style="background: linear-gradient(135deg, var(--honey-gold) 0%, var(--terracotta) 100%); color: white; padding: var(--spacing-md);">
+                    <h3 style="margin: 0; font-size: 1.1rem;">{{ list.store_name }}</h3>
+                </div>
+                <div style="padding: var(--spacing-lg);">
+                    {% set completed = list.items.filter_by(is_checked=True).count() %}
+                    {% set total = list.items.count() %}
+                    <div style="margin-bottom: var(--spacing-md);">
+                        <small style="color: #666; display: block; margin-bottom: 0.5rem;">{{ completed }}/{{ total }} items completed</small>
+                        <div style="background: var(--light-gray); height: 8px; border-radius: 4px; overflow: hidden;">
+                            <div style="background: var(--sage-green); height: 100%; width: {{ (completed/total*100) if total > 0 else 0 }}%; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: var(--spacing-sm); flex-direction: column;">
+                        <a href="{{ url_for('shopping.view', id=list.id) }}" class="btn btn-primary" style="text-align: center;">View List</a>
+                        <a href="{{ url_for('shopping.add_item', id=list.id) }}" class="btn btn-soft" style="text-align: center;">➕ Add Item</a>
+                    </div>
+                </div>
+                <div style="padding: var(--spacing-sm) var(--spacing-lg); background: #f8f5f0; border-top: 1px solid var(--light-gray); display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem; color: #666;">
+                    <span>Created {{ list.created_at.strftime('%b %d') }}</span>
+                    <form method="POST" action="{{ url_for('shopping.delete_list', id=list.id) }}" style="display: inline;" onsubmit="return confirm('Delete this list?');">
+                        <button type="submit" style="background: none; border: none; color: var(--terracotta); cursor: pointer; text-decoration: underline; font-size: 0.75rem; padding: 0;">Delete</button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+{% else %}
+    <div style="text-align: center; padding: var(--spacing-xl); background: linear-gradient(135deg, rgba(135, 168, 120, 0.1) 0%, rgba(244, 162, 97, 0.1) 100%); border-radius: var(--radius-lg); border: 2px dashed var(--honey-gold);">
+        <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">🛒</div>
+        <h3>No shopping lists yet</h3>
+        <p style="color: #666; margin-bottom: var(--spacing-lg);">Create your first shopping list to start adding items from your meals.</p>
+        <a href="{{ url_for('shopping.create') }}" class="btn btn-primary">Create Shopping List</a>
+    </div>
+{% endif %}
+{% endblock %}

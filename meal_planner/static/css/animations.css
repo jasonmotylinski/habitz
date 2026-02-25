@@ -1,0 +1,409 @@
+/* ========================================
+   ANIMATIONS - Transitions & Interactions
+   ======================================== */
+
+/* ===== FADE ANIMATIONS ===== */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== SCALE ANIMATIONS ===== */
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* ===== SLIDE ANIMATIONS ===== */
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ===== PULSE ANIMATIONS ===== */
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+/* ===== PAGE TRANSITIONS ===== */
+
+.page-enter {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+.page-exit {
+    animation: fadeOut 0.2s ease-out;
+}
+
+/* ===== COMPONENT ANIMATIONS ===== */
+
+/* Card Hover Animation */
+.card {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.3s ease,
+                background-color 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Button Animations */
+.btn {
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* Form Input Animations */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea,
+select {
+    transition: all 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+    transform: translateY(-2px);
+}
+
+/* Label Animation */
+label {
+    transition: color 0.2s ease;
+}
+
+input:focus + label,
+textarea:focus + label,
+select:focus + label {
+    color: var(--sage-green);
+}
+
+/* ===== LOADING ANIMATIONS ===== */
+
+.spinner {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--light-gray);
+    border-top-color: var(--sage-green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.spinner-small {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+}
+
+/* ===== TOAST NOTIFICATIONS ===== */
+
+.toast {
+    position: fixed;
+    bottom: var(--spacing-lg);
+    right: var(--spacing-lg);
+    background-color: var(--white);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    min-width: 300px;
+    z-index: 1000;
+    animation: slideInRight 0.3s ease-out;
+}
+
+.toast.exit {
+    animation: slideOutRight 0.3s ease-out forwards;
+}
+
+@keyframes slideOutRight {
+    to {
+        opacity: 0;
+        transform: translateX(400px);
+    }
+}
+
+.toast-success {
+    border-left: 4px solid var(--sage-green);
+    color: var(--charcoal);
+}
+
+.toast-success .toast-icon {
+    color: var(--sage-green);
+}
+
+.toast-danger {
+    border-left: 4px solid var(--terracotta);
+    color: var(--charcoal);
+}
+
+.toast-danger .toast-icon {
+    color: var(--terracotta);
+}
+
+.toast-icon {
+    font-size: 1.5rem;
+    margin-right: var(--spacing-sm);
+}
+
+/* ===== TRANSITIONS ===== */
+
+/* Smooth transitions for common property changes */
+.transition-all {
+    transition: all 0.2s ease;
+}
+
+.transition-fast {
+    transition: all 0.15s ease;
+}
+
+.transition-slow {
+    transition: all 0.4s ease;
+}
+
+/* ===== HOVER EFFECTS ===== */
+
+.hover-lift {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hover-lift:hover {
+    transform: translateY(-4px);
+}
+
+.hover-glow {
+    transition: box-shadow 0.2s ease;
+}
+
+.hover-glow:hover {
+    box-shadow: 0 0 20px rgba(135, 168, 120, 0.3);
+}
+
+.hover-opacity {
+    transition: opacity 0.2s ease;
+}
+
+.hover-opacity:hover {
+    opacity: 0.8;
+}
+
+.hover-scale {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+/* ===== PROGRESS ANIMATIONS ===== */
+
+@keyframes progressFill {
+    from {
+        width: 0;
+    }
+}
+
+.progress-bar {
+    height: 4px;
+    background-color: var(--light-gray);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--sage-green) 0%, var(--honey-gold) 100%);
+    transition: width 0.3s ease;
+}
+
+/* ===== CHECKMARK ANIMATION ===== */
+
+@keyframes checkmark {
+    0% {
+        stroke-dashoffset: 50;
+    }
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+.checkmark {
+    animation: checkmark 0.5s ease-out;
+}
+
+/* ===== CONFETTI ANIMATION ===== */
+
+@keyframes confetti-fall {
+    to {
+        transform: translateY(500px) rotateX(360deg) rotateZ(360deg);
+        opacity: 0;
+    }
+}
+
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    pointer-events: none;
+    animation: confetti-fall 3s ease-out forwards;
+}
+
+/* ===== ACCESSIBILITY ===== */
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ===== FOCUS STATES ===== */
+
+*:focus-visible {
+    outline: 2px solid var(--sage-green);
+    outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--sage-green);
+    outline-offset: 2px;
+}
+
+/* ===== SELECTION STYLING ===== */
+
+::selection {
+    background-color: var(--sage-green);
+    color: var(--white);
+}
+
+::-moz-selection {
+    background-color: var(--sage-green);
+    color: var(--white);
+}

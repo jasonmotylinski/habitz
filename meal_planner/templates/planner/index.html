@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}This Week - Meal Planner{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="planner-header">
+    <div>
+        <h1 style="margin: 0;">📅 Meals for {{ week_start.strftime('%b %d') }} – {{ week_dates[-1].strftime('%b %d') }}</h1>
+    </div>
+    <div style="display: flex; gap: var(--spacing-sm);">
+        <a href="{{ url_for('planner.index', week=prev_week.isoformat()) }}" class="btn btn-soft">← Previous</a>
+        <a href="{{ url_for('planner.index', week=next_week.isoformat()) }}" class="btn btn-soft">Next →</a>
+    </div>
+</div>
+
+<!-- Week Days Grid -->
+<div class="week-days">
+    {% for day in week_dates %}
+        {% set meal_plan = meal_plans[day]['dinner'] %}
+        {% set is_today = day == today %}
+
+        <div class="day-card {% if is_today %}today{% elif not meal_plan %}empty{% endif %}">
+            <!-- Day Header -->
+            <div class="day-name">{{ day.strftime('%A') }}</div>
+            <div class="day-date">{{ day.strftime('%b %d') }}</div>
+
+            <!-- Meal Slot -->
+            {% if meal_plan and meal_plan.meal and meal_plan.meal.image_filename %}
+                <!-- Meal with Image -->
+                <a href="{{ url_for('meals.view', id=meal_plan.meal.id) }}"
+                   class="meal-slot"
+                   style="background-image: url('{% if meal_plan.meal.image_filename.startswith('http') %}{{ meal_plan.meal.image_filename }}{% else %}{{ url_for('static', filename='uploads/' + meal_plan.meal.image_filename) }}{% endif %}');">
+                    <div class="meal-slot-content">
+                        <div style="font-weight: 700; font-size: 1.125rem;">{{ meal_plan.meal.name }}</div>
+                    </div>
+                </a>
+            {% elif meal_plan %}
+                <!-- Meal without Image -->
+                <div class="meal-slot" style="background: linear-gradient(135deg, var(--honey-gold) 0%, var(--terracotta) 100%);">
+                    <div class="meal-slot-content">
+                        {% if meal_plan.meal %}
+                            <div style="font-weight: 700; font-size: 1.125rem;">{{ meal_plan.meal.name }}</div>
+                        {% else %}
+                            <div style="font-weight: 700; font-size: 1rem;">{{ meal_plan.custom_entry }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <!-- Empty Slot -->
+                <div class="meal-slot empty">
+                    ➕ Plan
+                </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="day-card-actions">
+                <a href="{{ url_for('planner.set_meal', date_str=day.isoformat(), meal_type='dinner') }}"
+                   class="btn btn-sm {% if meal_plan %}btn-secondary{% else %}btn-primary{% endif %}">
+                    {% if meal_plan %}Change{% else %}Add{% endif %}
+                </a>
+                {% if meal_plan %}
+                    <form method="POST"
+                          action="{{ url_for('planner.delete_meal', date_str=day.isoformat(), meal_type='dinner') }}"
+                          onsubmit="return confirm('Remove this meal?');"
+                          style="flex: 1;">
+                        <button type="submit" class="btn btn-sm btn-outline" style="width: 100%; color: var(--terracotta); border-color: var(--terracotta);">
+                            Remove
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+
+            <!-- Status & Description -->
+            {% if meal_plan %}
+                <!-- Import Status Indicator -->
+                {% if meal_plan.import_status == 'pending' %}
+                    <small style="display: block; margin-top: 0.5rem; color: var(--honey-gold); font-weight: 600;">
+                        ⏳ Importing recipe details...
+                    </small>
+                {% elif meal_plan.import_status == 'failed' %}
+                    <small style="display: block; margin-top: 0.5rem; color: var(--terracotta); font-weight: 600;">
+                        ⚠️ Import failed - <a href="{{ meal_plan.source_url }}" target="_blank" style="color: var(--terracotta); text-decoration: underline;">view URL</a>
+                    </small>
+                {% endif %}
+
+                {% if meal_plan.meal and meal_plan.meal.description %}
+                    <p style="margin: var(--spacing-sm) 0 0 0; font-size: 0.875rem; color: #666;">
+                        {{ meal_plan.meal.description[:60] }}...
+                    </p>
+                {% endif %}
+
+                <!-- Source URL Link -->
+                {% if meal_plan.meal and meal_plan.meal.source_url %}
+                    <small style="display: block; margin-top: 0.5rem;">
+                        <a href="{{ meal_plan.meal.source_url }}" target="_blank" rel="noopener"
+                           style="color: var(--sage-green); text-decoration: none; font-size: 0.75rem;">
+                            📎 {{ meal_plan.meal.source_name or 'View recipe' }}
+                        </a>
+                    </small>
+                {% elif meal_plan.source_url and meal_plan.import_status != 'pending' %}
+                    <small style="display: block; margin-top: 0.5rem;">
+                        <a href="{{ meal_plan.source_url }}" target="_blank" rel="noopener"
+                           style="color: var(--sage-green); text-decoration: none; font-size: 0.75rem;">
+                            🔗 View URL
+                        </a>
+                    </small>
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Help Section -->
+<section style="margin-top: var(--spacing-xl); padding: var(--spacing-lg); background: linear-gradient(135deg, rgba(244, 162, 97, 0.1) 0%, rgba(135, 168, 120, 0.1) 100%); border-radius: var(--radius-lg); border-left: 4px solid var(--honey-gold); text-align: center;">
+    <h4 style="margin-top: 0;">💡 Planning Tips</h4>
+    <p style="margin: var(--spacing-sm) 0; color: #666;">
+        Plan your week on Sunday, then generate a shopping list. You'll never wonder "what's for dinner" again!
+    </p>
+    <a href="{{ url_for('shopping.create', week=week_start.isoformat()) }}" class="btn btn-secondary">Generate Shopping List</a>
+</section>
+{% endblock %}

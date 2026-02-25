@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Household - Meal Planner{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1 class="mb-4">👥 {{ household.name }}</h1>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Household Members</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for member in members %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center" style="padding: 1rem;">
+                        <div>
+                            <strong>{{ member.username }}</strong>
+                            <small class="text-muted ms-2">{{ member.email }}</small>
+                            {% if member.id == household.created_by %}
+                                <span class="badge bg-primary ms-2">Creator</span>
+                            {% endif %}
+                        </div>
+                        {% if member.id != current_user.id and current_user.id == household.created_by %}
+                            <form method="POST" action="{{ url_for('household.remove_member', user_id=member.id) }}"
+                                  onsubmit="return confirm('Remove {{ member.username }}?');" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="alert alert-info mb-4">
+            <strong>Tip:</strong> All meal plans and shopping lists in this household are shared with all members.
+            Any changes made by one person will be visible to everyone immediately.
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Invite Partner</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Share this link with your partner to invite them to your household.</p>
+                <a href="{{ url_for('household.invite') }}" class="btn btn-primary w-100">Get Invite Link</a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Actions</h5>
+            </div>
+            <div class="card-body">
+                {% if current_user.id == household.created_by %}
+                    <p class="text-muted small">You are the creator of this household.</p>
+                {% else %}
+                    <form method="POST" action="{{ url_for('household.leave') }}"
+                          onsubmit="return confirm('Leave this household?');">
+                        <button type="submit" class="btn btn-outline-danger w-100">Leave Household</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

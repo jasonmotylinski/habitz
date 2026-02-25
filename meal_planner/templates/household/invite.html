@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Invite Members - Meal Planner{% endblock %}
+
+{% block content %}
+<div style="max-width: 700px; margin: 0 auto; padding: var(--spacing-xl);">
+    <!-- Header -->
+    <div style="margin-bottom: var(--spacing-xl);">
+        <h1 style="margin: 0 0 var(--spacing-sm) 0;">👥 Invite Members</h1>
+        <p style="color: #666; margin: 0;">Add people to household: <strong>{{ household.name }}</strong></p>
+    </div>
+
+    <!-- Generate New Invite -->
+    <div class="card" style="margin-bottom: var(--spacing-lg);">
+        <div style="background: linear-gradient(135deg, var(--sage-green) 0%, var(--honey-gold) 100%); color: white; padding: var(--spacing-lg);">
+            <h3 style="margin: 0;">🔗 Create New Invite Link</h3>
+        </div>
+        <div style="padding: var(--spacing-lg);">
+            <form method="POST" style="display: flex; gap: var(--spacing-sm);">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">
+                    Generate Secure Link
+                </button>
+            </form>
+            <p style="color: #666; font-size: 0.875rem; margin-top: var(--spacing-md); margin-bottom: 0;">
+                ✓ Generates a random, unguessable token<br>
+                ✓ Expires in 7 days<br>
+                ✓ One-time use only
+            </p>
+        </div>
+    </div>
+
+    <!-- Active Invites -->
+    {% if active_invites %}
+        <div class="card">
+            <div style="background: linear-gradient(135deg, var(--honey-gold) 0%, var(--terracotta) 100%); color: white; padding: var(--spacing-lg);">
+                <h3 style="margin: 0;">📋 Active Invites</h3>
+            </div>
+            <div style="padding: var(--spacing-lg);">
+                {% for invite in active_invites %}
+                    <div style="padding: var(--spacing-md); background: #f8f5f0; border-radius: var(--radius-md); margin-bottom: var(--spacing-sm); border-left: 4px solid var(--sage-green);">
+                        <!-- Invite Link -->
+                        <div style="margin-bottom: var(--spacing-sm);">
+                            <small style="color: #666; display: block; margin-bottom: 0.5rem;">Invite Link:</small>
+                            <div style="display: flex; gap: var(--spacing-sm);">
+                                <input type="text" class="form-control" style="flex: 1; padding: 8px 12px; font-size: 0.875rem; font-family: monospace;"
+                                       value="{{ url_for('household.join', token=invite.token, _external=True) }}"
+                                       readonly
+                                       onclick="this.select(); document.execCommand('copy');">
+                                <button type="button" class="btn btn-sm btn-secondary" onclick="copyToClipboard(this)">
+                                    📋 Copy
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Status -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem; color: #666;">
+                            <div>
+                                Created: {{ invite.created_at.strftime('%b %d') }}<br>
+                                Expires: {{ invite.expires_at.strftime('%b %d at %I:%M %p') }}
+                            </div>
+                            <form method="POST" action="{{ url_for('household.revoke_invite', token=invite.token) }}" style="display: inline;" onsubmit="return confirm('Revoke this invite?');">
+                                <button type="submit" class="btn btn-sm btn-outline" style="color: var(--terracotta); border-color: var(--terracotta);">
+                                    Revoke
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: var(--spacing-xl); background: linear-gradient(135deg, rgba(135, 168, 120, 0.1) 0%, rgba(244, 162, 97, 0.1) 100%); border-radius: var(--radius-lg); margin-bottom: var(--spacing-lg);">
+            <p style="color: #666; margin: 0;">No active invites. Click "Generate Secure Link" above to create one.</p>
+        </div>
+    {% endif %}
+
+    <!-- Instructions -->
+    <div class="card" style="margin-top: var(--spacing-lg);">
+        <div style="background: rgba(135, 168, 120, 0.1); padding: var(--spacing-lg); border-radius: var(--radius-lg);">
+            <h4 style="margin-top: 0;">📖 How It Works</h4>
+            <ol style="margin: var(--spacing-md) 0 0 0; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                <li>Click "Generate Secure Link" to create a new invite</li>
+                <li>Copy the link and share it with the person you want to invite</li>
+                <li>They click the link (while logged in) and confirm joining</li>
+                <li>They're added to your household</li>
+                <li>You'll both see the same meal plans and shopping lists</li>
+            </ol>
+            <p style="color: #666; font-size: 0.875rem; margin-top: var(--spacing-md);">
+                <strong>Security:</strong> Each link is random and unguessable. Links expire in 7 days and can only be used once.
+            </p>
+        </div>
+    </div>
+
+    <!-- Back Button -->
+    <div style="margin-top: var(--spacing-lg);">
+        <a href="{{ url_for('household.index') }}" class="btn btn-soft" style="width: 100%; text-align: center;">
+            ← Back to Household
+        </a>
+    </div>
+</div>
+
+<script>
+    function copyToClipboard(button) {
+        const input = button.previousElementSibling;
+        input.select();
+        document.execCommand('copy');
+
+        const originalText = button.textContent;
+        button.textContent = '✓ Copied!';
+        setTimeout(() => {
+            button.textContent = originalText;
+        }, 2000);
+    }
+</script>
+{% endblock %}

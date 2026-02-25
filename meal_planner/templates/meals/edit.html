@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Meal - Meal Planner{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Edit Meal</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <!-- Name -->
+                    <div class="mb-3">
+                        {{ form.name.label(class="form-label") }}
+                        {% if form.name.errors %}
+                            {{ form.name(class="form-control is-invalid") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.name.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.name(class="form-control") }}
+                        {% endif %}
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {% if form.description.errors %}
+                            {{ form.description(class="form-control is-invalid", rows="3") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.description.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.description(class="form-control", rows="3") }}
+                        {% endif %}
+                    </div>
+
+                    <!-- Category -->
+                    <div class="mb-3">
+                        {{ form.category.label(class="form-label") }}
+                        {% if form.category.errors %}
+                            {{ form.category(class="form-control is-invalid") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.category.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.category(class="form-control") }}
+                        {% endif %}
+                    </div>
+
+                    <!-- Ingredients -->
+                    <div class="mb-3">
+                        {{ form.ingredients.label(class="form-label") }}
+                        <small class="d-block text-muted mb-2">Enter each ingredient on a new line</small>
+                        {% if form.ingredients.errors %}
+                            {{ form.ingredients(class="form-control is-invalid", rows="5") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.ingredients.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.ingredients(class="form-control", rows="5") }}
+                        {% endif %}
+                    </div>
+
+                    <!-- Instructions -->
+                    <div class="mb-3">
+                        {{ form.instructions.label(class="form-label") }}
+                        <small class="d-block text-muted mb-2">Detailed step-by-step instructions</small>
+                        {% if form.instructions.errors %}
+                            {{ form.instructions(class="form-control is-invalid", rows="6") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.instructions.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.instructions(class="form-control", rows="6") }}
+                        {% endif %}
+                    </div>
+
+                    <!-- Current Image -->
+                    {% if meal.image_filename %}
+                        <div class="mb-3">
+                            <label class="form-label">Current Image</label>
+                            <div class="mb-2">
+                                {% if meal.image_filename.startswith('http') %}
+                                    <img src="{{ meal.image_filename }}" style="max-width: 200px; border-radius: 4px;">
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='uploads/' + meal.image_filename) }}" style="max-width: 200px; border-radius: 4px;">
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Image URL -->
+                    <div class="mb-3">
+                        {{ form.image_url.label(class="form-label") }}
+                        <small class="d-block text-muted mb-2">Leave blank to keep current image</small>
+                        {% if form.image_url.errors %}
+                            {{ form.image_url(class="form-control is-invalid", placeholder="https://example.com/image.jpg") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.image_url.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.image_url(class="form-control", placeholder="https://example.com/image.jpg") }}
+                        {% endif %}
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="d-grid gap-2 d-sm-flex">
+                        {{ form.submit(class="btn btn-primary btn-lg", value="Save Changes") }}
+                        <a href="{{ url_for('meals.view', id=meal.id) }}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Calorie Tracker{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Date Navigation -->
+    <div class="date-nav">
+        <a href="{{ url_for('main.dashboard', date=prev_date.isoformat()) }}" class="date-nav-btn" aria-label="Previous day">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </a>
+        <div class="date-nav-label">
+            <span class="date-nav-day">{{ view_date.strftime('%A') }}</span>
+            <span class="date-nav-full">{{ view_date.strftime('%b %d, %Y') }}</span>
+        </div>
+        <a href="{{ url_for('main.dashboard', date=next_date.isoformat()) }}" class="date-nav-btn" aria-label="Next day">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+    </div>
+
+    <!-- Calorie Ring -->
+    {% set cal_pct = (totals.calories / current_user.daily_calorie_goal * 100) if current_user.daily_calorie_goal > 0 else 0 %}
+    {% set remaining = (current_user.daily_calorie_goal - totals.calories)|int %}
+    {% set over_budget = remaining < 0 %}
+    <div class="calorie-ring-section">
+        <div class="calorie-ring" data-percentage="{{ [cal_pct, 100]|min }}">
+            <svg viewBox="0 0 200 200" class="calorie-ring-svg">
+                <defs>
+                    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="var(--green-400)"/>
+                        <stop offset="100%" stop-color="var(--green-600)"/>
+                    </linearGradient>
+                    <linearGradient id="ringGradOver" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="var(--terra)"/>
+                        <stop offset="100%" stop-color="var(--red-500)"/>
+                    </linearGradient>
+                </defs>
+                <circle cx="100" cy="100" r="85" class="calorie-ring-bg"/>
+                <circle cx="100" cy="100" r="85"
+                    class="calorie-ring-fill {% if over_budget %}calorie-ring-fill--over{% endif %}"
+                    stroke-dasharray="534"
+                    stroke-dashoffset="{{ 534 - (534 * ([cal_pct, 100]|min) / 100) }}"
+                />
+            </svg>
+            <div class="calorie-ring-text">
+                <span class="calorie-ring-consumed">{{ totals.calories|int }}</span>
+                <span class="calorie-ring-label">of {{ current_user.daily_calorie_goal }}</span>
+                <span class="calorie-ring-remaining {% if over_budget %}calorie-ring-remaining--over{% endif %}">
+                    {% if over_budget %}
+                        {{ (remaining * -1) }} over
+                    {% else %}
+                        {{ remaining }} left
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Macro Bars -->
+    <div class="macro-bars">
+        {% set macros = [
+            ('Protein', totals.protein_g, current_user.protein_goal_g, 'protein'),
+            ('Carbs', totals.carbs_g, current_user.carb_goal_g, 'carbs'),
+            ('Fat', totals.fat_g, current_user.fat_goal_g, 'fat'),
+        ] %}
+        {% for name, current, goal, cls in macros %}
+        {% set pct = (current / goal * 100) if goal > 0 else 0 %}
+        <div class="macro-bar">
+            <div class="macro-bar-header">
+                <span class="macro-bar-name">{{ name }}</span>
+                <span class="macro-bar-value">{{ current|round(0)|int }}<span class="macro-bar-goal"> / {{ goal }}g</span></span>
+            </div>
+            <div class="macro-bar-track">
+                <div class="macro-bar-fill macro-bar-fill--{{ cls }}" style="width: {{ [pct, 100]|min }}%"></div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Meal Sections -->
+    {% set meal_info = [
+        ('breakfast', 'Breakfast', '🌅'),
+        ('lunch', 'Lunch', '☀️'),
+        ('dinner', 'Dinner', '🌙'),
+        ('snack', 'Snacks', '🍿'),
+    ] %}
+
+    <div class="meal-sections">
+        {% for meal_type, meal_label, meal_icon in meal_info %}
+        <div class="meal-card">
+            <div class="meal-card-header">
+                <div class="meal-card-title">
+                    <span class="meal-card-icon">{{ meal_icon }}</span>
+                    <span>{{ meal_label }}</span>
+                </div>
+                <span class="meal-card-total">
+                    {% if meal_totals[meal_type] %}{{ meal_totals[meal_type]|int }} cal{% else %}—{% endif %}
+                </span>
+            </div>
+
+            {% if meals[meal_type] %}
+            <div class="meal-entries">
+                {% for entry in meals[meal_type] %}
+                <div class="meal-entry">
+                    <div class="meal-entry-info">
+                        <span class="meal-entry-name">{{ entry.food_item.name }}</span>
+                        {% if entry.food_item.source != 'quick_add' %}
+                        <span class="meal-entry-serving">{{ entry.servings }} serving{{ 's' if entry.servings != 1 }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="meal-entry-right">
+                        <span class="meal-entry-cal">{{ entry.calories|int }}</span>
+                        <button class="meal-entry-delete" data-log-id="{{ entry.id }}" aria-label="Delete entry">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <a href="{{ url_for('food.search', meal=meal_type, date=view_date.isoformat()) }}" class="meal-add-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Add Food</span>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Weekly Overview -->
+    <div class="weekly-section">
+        <h3 class="weekly-title">This Week</h3>
+        <div class="weekly-chart">
+            {% for day in weekly %}
+            {% set bar_pct = (day.calories / current_user.daily_calorie_goal * 100) if current_user.daily_calorie_goal > 0 else 0 %}
+            <div class="weekly-bar-col {% if day.is_today %}weekly-bar-col--today{% endif %}">
+                <div class="weekly-bar-wrap">
+                    <div class="weekly-bar" style="height: {{ [bar_pct, 100]|min }}%">
+                        {% if day.calories > 0 %}
+                        <span class="weekly-bar-val">{{ day.calories }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <span class="weekly-bar-label">{{ day.day }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

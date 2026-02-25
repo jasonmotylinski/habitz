@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Add Item - Meal Planner{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Add Item to {{ shopping_list.store_name }}</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        {{ form.item_name.label(class="form-label") }}
+                        {% if form.item_name.errors %}
+                            {{ form.item_name(class="form-control is-invalid", placeholder="e.g., Chicken breast") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.item_name.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.item_name(class="form-control", placeholder="e.g., Chicken breast") }}
+                        {% endif %}
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.quantity.label(class="form-label") }}
+                                {{ form.quantity(class="form-control", placeholder="e.g., 2") }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.unit.label(class="form-label") }}
+                                {{ form.unit(class="form-control", placeholder="e.g., lbs, cups") }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary btn-lg", value="Add Item") }}
+                        <a href="{{ url_for('shopping.view', id=shopping_list.id) }}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Quick Units</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for unit in ['cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g', 'ml', 'pkg'] %}
+                        <div class="col-6 mb-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="document.querySelector('input[name=unit]').value='{{ unit }}'; return false;">{{ unit }}</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

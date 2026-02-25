@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Fasting Tracker — Own Your Time{% endblock %}
+
+{% block content %}
+<div class="landing">
+    <div class="landing-bg">
+        <div class="landing-orb landing-orb--1"></div>
+        <div class="landing-orb landing-orb--2"></div>
+        <div class="landing-orb landing-orb--3"></div>
+    </div>
+
+    <div class="landing-content">
+        <div class="landing-logo">
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                <circle cx="32" cy="32" r="28" stroke="var(--blue-400)" stroke-width="4" stroke-linecap="round" stroke-dasharray="12 8" opacity="0.6"/>
+                <circle cx="32" cy="32" r="18" stroke="var(--blue-500)" stroke-width="5" stroke-linecap="round" stroke-dashoffset="20" stroke-dasharray="80 200"/>
+                <circle cx="32" cy="32" r="6" fill="var(--accent)"/>
+            </svg>
+        </div>
+
+        <h1 class="landing-title">
+            Own your<br>
+            <span class="landing-title--accent">fasting</span>,<br>
+            effortlessly.
+        </h1>
+
+        <p class="landing-subtitle">
+            Simple fasting timers and weekly goals that fit your life.
+            No complexity, no pressure — just clarity.
+        </p>
+
+        <div class="landing-actions">
+            <a href="{{ url_for('auth.register') }}" class="btn btn--primary btn--lg">Get Started</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn--ghost btn--lg">Log In</a>
+        </div>
+
+        <div class="landing-features">
+            <div class="landing-feature">
+                <div class="landing-feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <span>Live timer</span>
+            </div>
+            <div class="landing-feature">
+                <div class="landing-feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                </div>
+                <span>Weekly goals</span>
+            </div>
+            <div class="landing-feature">
+                <div class="landing-feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                </div>
+                <span>Full history</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

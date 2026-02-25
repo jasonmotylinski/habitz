@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Quick Log - Workout Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Quick Log</h1>
+</div>
+
+<form id="quick-log-form" onsubmit="return saveQuickLog(event)">
+    <div class="form-group">
+        <label for="workout-name">Workout Name</label>
+        <input type="text" id="workout-name" class="form-control" placeholder="e.g. Meditation, Hiking, Hotel Gym" required autofocus>
+    </div>
+    <div class="form-group">
+        <label for="workout-notes">Notes (optional)</label>
+        <textarea id="workout-notes" class="form-control" rows="3" placeholder="Any details about this workout..."></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">Save</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function saveQuickLog(e) {
+    e.preventDefault();
+    const name = document.getElementById('workout-name').value.trim();
+    if (!name) return;
+
+    const notes = document.getElementById('workout-notes').value.trim() || undefined;
+
+    try {
+        await api.post('/api/logs', { custom_name: name, notes });
+        showToast('Workout logged!', 'success');
+        window.location.href = SCRIPT_ROOT + '/';
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,27 @@
+{
+  "name": "Fuel",
+  "short_name": "Fuel",
+  "description": "Track your daily calories and macros.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f0f7f1",
+  "theme_color": "#2d6a4f",
+  "icons": [
+    {
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["food", "health", "fitness"],
+  "prefer_related_applications": false
+}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Programs - Workout Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Programs</h1>
+    <button class="btn btn-primary" onclick="showCreateProgram()">New</button>
+</div>
+
+<div id="programs-list"></div>
+
+<!-- Create/Edit Program Modal -->
+<div id="program-modal" class="modal-overlay hidden">
+    <div class="modal">
+        <h2 id="program-modal-title">New Program</h2>
+        <div class="form-group">
+            <label>Program Name</label>
+            <input type="text" id="program-name" class="form-control" placeholder="e.g. Push/Pull/Legs">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="program-save-btn" onclick="saveProgram()">Create</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let editingProgramId = null;
+
+async function loadPrograms() {
+    const programs = await api.get('/api/programs');
+    const list = document.getElementById('programs-list');
+
+    if (!programs.length) {
+        list.innerHTML = `
+            <div class="empty-state">
+                <h3>No programs</h3>
+                <p>Create your first workout program to get started.</p>
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = programs.map(p => `
+        <div class="list-group">
+            <div class="list-item" onclick="window.location.href=SCRIPT_ROOT+'/programs/${p.id}'">
+                <div>
+                    <div class="list-item-title">${p.name}</div>
+                    <div class="list-item-subtitle">${(p.workouts || []).length} workouts</div>
+                </div>
+                <span class="list-item-chevron">›</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function showCreateProgram() {
+    editingProgramId = null;
+    document.getElementById('program-modal-title').textContent = 'New Program';
+    document.getElementById('program-save-btn').textContent = 'Create';
+    document.getElementById('program-name').value = '';
+    document.getElementById('program-modal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('program-modal').classList.add('hidden');
+}
+
+async function saveProgram() {
+    const name = document.getElementById('program-name').value.trim();
+
+    if (!name) { showToast('Name is required', 'error'); return; }
+
+    try {
+        if (editingProgramId) {
+            await api.put(`/api/programs/${editingProgramId}`, { name });
+        } else {
+            await api.post('/api/programs', { name });
+        }
+        closeModal();
+        loadPrograms();
+        showToast(editingProgramId ? 'Program updated' : 'Program created', 'success');
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+document.getElementById('program-modal').addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) closeModal();
+});
+
+// Reload programs when page gains focus (after navigating back)
+window.addEventListener('pageshow', () => {
+    loadPrograms();
+});
+
+loadPrograms();
+</script>
+{% endblock %}
