@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#0f1117"/>
+  <!-- H shape: two bars + crossbar -->
+  <path d="M6,5 H12 V13 H20 V5 H26 V27 H20 V19 H12 V27 H6 Z" fill="#4a6cf7"/>
+</svg>
