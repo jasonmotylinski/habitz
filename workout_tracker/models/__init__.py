@@ -1,4 +1,4 @@
-from .user import User
+from .user import User  # re-exported from shared.user
 from .program import Program, ProgramWorkoutOrder
 from .workout import Workout, WorkoutExercise
 from .exercise import Exercise

@@ -20,7 +20,7 @@ def create_app(config_name='development'):
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
     # Initialize extensions
-    from .models import db, User
+    from shared import db, User
     db.init_app(app)
     migrate.init_app(app, db)
 

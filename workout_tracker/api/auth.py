@@ -1,7 +1,7 @@
 from flask import request, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 
-from .. import db, bcrypt
+from .. import db
 from . import api_bp
 from ..models.user import User
 

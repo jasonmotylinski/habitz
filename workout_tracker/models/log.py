@@ -7,7 +7,7 @@ class WorkoutLog(db.Model):
     __tablename__ = "workout_logs"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     program_id = db.Column(db.Integer, db.ForeignKey("programs.id"), nullable=True)
     workout_id = db.Column(db.Integer, db.ForeignKey("workouts.id"), nullable=True)
     custom_name = db.Column(db.String(200), nullable=True)

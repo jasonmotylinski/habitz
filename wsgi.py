@@ -13,12 +13,8 @@ URL map:
 """
 import os
 
-# Pre-create instance directories for apps that compute their own absolute DB paths.
-# (calorie_tracker, fasting_tracker, workout_tracker all use {package}/instance/)
+# All apps share a single database in habitz/habitz/instance/habitz.db
 _here = os.path.dirname(os.path.abspath(__file__))
-for _pkg in ('calorie_tracker', 'fasting_tracker', 'workout_tracker'):
-    os.makedirs(os.path.join(_here, _pkg, 'instance'), exist_ok=True)
-# meal_planner uses Flask's managed instance path (habitz/habitz/instance/)
 os.makedirs(os.path.join(_here, 'instance'), exist_ok=True)
 
 from werkzeug.middleware.dispatcher import DispatcherMiddleware

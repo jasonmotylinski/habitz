@@ -11,7 +11,7 @@ def create_app(config_name='development'):
     app = Flask(__name__, static_folder='static', static_url_path='/static')
     app.config.from_object(config[config_name])
 
-    from .models import db, User
+    from shared import db, User
     db.init_app(app)
     migrate.init_app(app, db)
 

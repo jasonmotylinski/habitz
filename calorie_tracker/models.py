@@ -1,57 +1,7 @@
 from datetime import date, datetime
 
-from flask_login import UserMixin
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import check_password_hash, generate_password_hash
-
-db = SQLAlchemy()
-
-
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
-    daily_calorie_goal = db.Column(db.Integer, default=2000)
-    protein_goal_pct = db.Column(db.Integer, default=30)
-    carb_goal_pct = db.Column(db.Integer, default=40)
-    fat_goal_pct = db.Column(db.Integer, default=30)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    food_logs = db.relationship('FoodLog', backref='user', lazy='dynamic',
-                                cascade='all, delete-orphan')
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-    @property
-    def protein_goal_g(self):
-        return round((self.daily_calorie_goal * self.protein_goal_pct / 100) / 4)
-
-    @property
-    def carb_goal_g(self):
-        return round((self.daily_calorie_goal * self.carb_goal_pct / 100) / 4)
-
-    @property
-    def fat_goal_g(self):
-        return round((self.daily_calorie_goal * self.fat_goal_pct / 100) / 9)
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'email': self.email,
-            'username': self.username,
-            'daily_calorie_goal': self.daily_calorie_goal,
-            'protein_goal_pct': self.protein_goal_pct,
-            'carb_goal_pct': self.carb_goal_pct,
-            'fat_goal_pct': self.fat_goal_pct,
-            'protein_goal_g': self.protein_goal_g,
-            'carb_goal_g': self.carb_goal_g,
-            'fat_goal_g': self.fat_goal_g,
-        }
+from shared import db
+from shared.user import User  # noqa: F401 – re-exported for sub-app imports
 
 
 class FoodItem(db.Model):
