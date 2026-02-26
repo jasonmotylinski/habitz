@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, redirect, url_for, session
+from flask import Flask, jsonify, request, redirect, session
 from flask_migrate import Migrate
 from flask_login import LoginManager
 
@@ -25,11 +25,17 @@ def create_app(config_name=None):
     def make_session_permanent():
         session.permanent = True
 
+    @login_manager.user_loader
+    def load_user(user_id):
+        from shared.user import User
+        return db.session.get(User, int(user_id))
+
     @login_manager.unauthorized_handler
     def unauthorized():
         if request.path.startswith("/api/"):
             return jsonify({"error": "Login required"}), 401
-        return redirect(url_for("views.login"))
+        next_path = request.script_root + request.path
+        return redirect(f'/login?next={next_path}')
 
     from .models import user  # noqa: F401 - register models
 

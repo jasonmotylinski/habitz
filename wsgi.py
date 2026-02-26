@@ -34,41 +34,29 @@ calorie_tracker_app = create_calorie_tracker(env)
 fasting_tracker_app = create_fasting_tracker(env)
 workout_tracker_app = create_workout_tracker(env)
 
-# Each sub-app needs its own session cookie scoped to its path prefix,
-# otherwise cookies from different apps would overwrite each other.
+# All apps share one session cookie at path '/' so login at the landing app
+# is recognised by every sub-app.  They all use the same SECRET_KEY from .env.
 _here = os.path.dirname(os.path.abspath(__file__))
+_shared_session = dict(
+    SESSION_COOKIE_NAME='habitz_session',
+    SESSION_COOKIE_PATH='/',
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_HTTPONLY=True,
+    REMEMBER_COOKIE_NAME='habitz_remember',
+    REMEMBER_COOKIE_PATH='/',
+)
+
 meal_planner_app.config.update(
-    SESSION_COOKIE_NAME='habitz_meals_session',
-    SESSION_COOKIE_PATH='/meals',
-    REMEMBER_COOKIE_NAME='habitz_meals_remember',
-    REMEMBER_COOKIE_PATH='/meals',
+    **_shared_session,
     # Use an absolute upload path so it doesn't depend on CWD
     UPLOAD_FOLDER=os.environ.get(
         'MEAL_PLANNER_UPLOAD_FOLDER',
         os.path.join(_here, 'uploads'),
     ),
 )
-
-calorie_tracker_app.config.update(
-    SESSION_COOKIE_NAME='habitz_calories_session',
-    SESSION_COOKIE_PATH='/calories',
-    REMEMBER_COOKIE_NAME='habitz_calories_remember',
-    REMEMBER_COOKIE_PATH='/calories',
-)
-
-fasting_tracker_app.config.update(
-    SESSION_COOKIE_NAME='habitz_fasting_session',
-    SESSION_COOKIE_PATH='/fasting',
-    REMEMBER_COOKIE_NAME='habitz_fasting_remember',
-    REMEMBER_COOKIE_PATH='/fasting',
-)
-
-workout_tracker_app.config.update(
-    SESSION_COOKIE_NAME='habitz_workouts_session',
-    SESSION_COOKIE_PATH='/workouts',
-    REMEMBER_COOKIE_NAME='habitz_workouts_remember',
-    REMEMBER_COOKIE_PATH='/workouts',
-)
+calorie_tracker_app.config.update(**_shared_session)
+fasting_tracker_app.config.update(**_shared_session)
+workout_tracker_app.config.update(**_shared_session)
 
 application = DispatcherMiddleware(landing_app, {
     '/meals': meal_planner_app,

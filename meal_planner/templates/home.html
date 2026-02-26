@@ -8,8 +8,8 @@
     <h1>What's for dinner this week?</h1>
     <p>Plan meals together, stop wondering "what's for dinner" at 5pm, and never lose a recipe again.</p>
     <div class="flex gap-2 flex-center" style="margin-top: var(--spacing-lg);">
-        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">Get Started</a>
-        <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-lg">Sign In</a>
+        <a href="/register" class="btn btn-primary btn-lg">Get Started</a>
+        <a href="/login" class="btn btn-outline btn-lg">Sign In</a>
     </div>
 </section>
 
@@ -58,6 +58,6 @@
     <p style="font-size: 1.125rem; margin: var(--spacing-lg) 0; color: #666;">
         Join families who've stopped the daily "what's for dinner" stress.
     </p>
-    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">Create Your Free Account</a>
+    <a href="/register" class="btn btn-primary btn-lg">Create Your Free Account</a>
 </section>
 {% endblock %}

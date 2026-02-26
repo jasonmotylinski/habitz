@@ -1,10 +1,11 @@
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, redirect, request
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from .config import config
 import os
 
 migrate = Migrate()
+
 
 def create_app(config_name='development'):
     """Application factory"""
@@ -26,15 +27,17 @@ def create_app(config_name='development'):
 
     login_manager = LoginManager()
     login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
-    login_manager.login_message = 'Please log in to access this page.'
 
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        return db.session.get(User, int(user_id))
+
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        next_path = request.script_root + request.path
+        return redirect(f'/login?next={next_path}')
 
     # Register blueprints
-    from .auth import auth_bp
     from .main import main_bp
     from .meals import meals_bp
     from .planner import planner_bp
@@ -43,7 +46,6 @@ def create_app(config_name='development'):
     from .api import api_bp
     from .api_keys import api_keys_bp
     from .settings import settings_bp
-    app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(meals_bp)
     app.register_blueprint(planner_bp)

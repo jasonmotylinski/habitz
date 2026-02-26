@@ -1,21 +1,7 @@
 from flask import Blueprint, render_template
-from flask_login import login_required, current_user
+from flask_login import login_required
 
 views_bp = Blueprint("views", __name__)
-
-
-@views_bp.route("/login")
-def login():
-    if current_user.is_authenticated:
-        return render_template("home.html")
-    return render_template("login.html")
-
-
-@views_bp.route("/register")
-def register():
-    if current_user.is_authenticated:
-        return render_template("home.html")
-    return render_template("register.html")
 
 
 @views_bp.route("/")

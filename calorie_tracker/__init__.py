@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, redirect, request
 from flask_login import LoginManager
 from flask_migrate import Migrate
 
@@ -17,18 +17,23 @@ def create_app(config_name='development'):
 
     login_manager = LoginManager()
     login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
 
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        return db.session.get(User, int(user_id))
 
-    from .auth import auth_bp
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        if request.is_json or request.path.startswith('/api/'):
+            from flask import jsonify
+            return jsonify({'error': 'Login required'}), 401
+        next_path = request.script_root + request.path
+        return redirect(f'/login?next={next_path}')
+
     from .main import main_bp
     from .food import food_bp
     from .api import api_bp
 
-    app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(food_bp)
     app.register_blueprint(api_bp)
