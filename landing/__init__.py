@@ -1,5 +1,5 @@
 from flask import Flask, render_template
-from flask_login import LoginManager, current_user
+from flask_login import LoginManager, current_user, login_required
 
 
 def create_app():
@@ -30,6 +30,7 @@ def create_app():
     app.register_blueprint(auth_bp)
 
     @app.route('/')
+    @login_required
     def index():
         return render_template('index.html', user=current_user)
 
