@@ -2,17 +2,24 @@
 """
 Migrate data from the individual per-app SQLite databases into a single habitz.db.
 
-Run from the habitz/habitz/ directory (or any directory):
+Usage:
     python scripts/migrate_to_habitz_db.py [--dry-run]
+        [--meal-planner-db PATH]
+        [--calorie-tracker-db PATH]
+        [--fasting-tracker-db PATH]
+        [--workout-tracker-db PATH]
+        [--target-db PATH]
 
-Source databases (pre-consolidation paths):
-    instance/meal_planner.db
-    calorie_tracker/instance/calorie_tracker.db
-    fasting_tracker/instance/fasting_tracker.db
-    instance/workout.db
+All path arguments are optional — defaults are the pre-consolidation locations
+relative to this script. Pass only the ones that differ on your server.
 
-Target:
-    instance/habitz.db   (also created/used by the unified app)
+Example (custom server layout):
+    python scripts/migrate_to_habitz_db.py \\
+        --meal-planner-db    /var/projects/meal-planner/instance/meal_planner.db \\
+        --calorie-tracker-db /var/projects/calorie-tracker/instance/calorie_tracker.db \\
+        --fasting-tracker-db /var/projects/fasting-tracker/instance/fasting_tracker.db \\
+        --workout-tracker-db /var/projects/workout-tracker/instance/workout.db \\
+        --target-db          /var/projects/habitz/instance/habitz.db
 
 Notes:
 - user_id=1 is assumed to be the same person across all apps.
@@ -261,10 +268,38 @@ APP_TABLES = {
 # ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description='Migrate per-app SQLite databases into a single habitz.db.',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__,
+    )
     parser.add_argument('--dry-run', action='store_true',
                         help='Show what would be done without writing anything')
+    parser.add_argument('--meal-planner-db',    metavar='PATH',
+                        default=SOURCE_DBS['meal_planner'],
+                        help=f'meal_planner source DB (default: {SOURCE_DBS["meal_planner"]})')
+    parser.add_argument('--calorie-tracker-db', metavar='PATH',
+                        default=SOURCE_DBS['calorie_tracker'],
+                        help=f'calorie_tracker source DB (default: {SOURCE_DBS["calorie_tracker"]})')
+    parser.add_argument('--fasting-tracker-db', metavar='PATH',
+                        default=SOURCE_DBS['fasting_tracker'],
+                        help=f'fasting_tracker source DB (default: {SOURCE_DBS["fasting_tracker"]})')
+    parser.add_argument('--workout-tracker-db', metavar='PATH',
+                        default=SOURCE_DBS['workout_tracker'],
+                        help=f'workout_tracker source DB (default: {SOURCE_DBS["workout_tracker"]})')
+    parser.add_argument('--target-db', metavar='PATH',
+                        default=TARGET_DB,
+                        help=f'habitz.db destination (default: {TARGET_DB})')
     args = parser.parse_args()
+
+    # Apply path overrides
+    source_paths = {
+        'meal_planner':    args.meal_planner_db,
+        'calorie_tracker': args.calorie_tracker_db,
+        'fasting_tracker': args.fasting_tracker_db,
+        'workout_tracker': args.workout_tracker_db,
+    }
+    target_db = args.target_db
 
     dry_run = args.dry_run
     if dry_run:
@@ -277,7 +312,7 @@ def main():
     # 2. Open connections
     print("\n=== Step 2: open source databases ===")
     sources = {}
-    for app, path in SOURCE_DBS.items():
+    for app, path in source_paths.items():
         print(f"  {app}: {path}")
         conn = open_db(path)
         if conn:
@@ -289,15 +324,15 @@ def main():
 
     # 3. Open target
     if not dry_run:
-        dst_conn = sqlite3.connect(TARGET_DB)
+        dst_conn = sqlite3.connect(target_db)
         dst_conn.row_factory = sqlite3.Row
         dst_conn.execute("PRAGMA foreign_keys = OFF")
     else:
         # Open target read-only for column introspection
-        if not os.path.exists(TARGET_DB):
-            print(f"\n[dry-run] target not found at {TARGET_DB}; schema bootstrap needed first.")
+        if not os.path.exists(target_db):
+            print(f"\n[dry-run] target not found at {target_db}; schema bootstrap needed first.")
             return
-        dst_conn = sqlite3.connect(TARGET_DB)
+        dst_conn = sqlite3.connect(target_db)
         dst_conn.row_factory = sqlite3.Row
 
     # 4. Merge users
@@ -318,7 +353,7 @@ def main():
         dst_conn.execute("PRAGMA foreign_keys = ON")
         dst_conn.commit()
         dst_conn.close()
-        print(f"\nMigration complete. Data written to: {TARGET_DB}")
+        print(f"\nMigration complete. Data written to: {target_db}")
     else:
         dst_conn.close()
         print("\n[dry-run] complete — no data written.")
