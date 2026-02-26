@@ -39,4 +39,7 @@ def create_app(config_name=None):
     from .views import views_bp
     app.register_blueprint(views_bp)
 
+    with app.app_context():
+        db.create_all()
+
     return app

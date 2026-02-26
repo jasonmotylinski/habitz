@@ -126,16 +126,20 @@ def copy_table(src_conn, dst_conn, table, dry_run=False):
 # Schema bootstrap via Flask app
 # ---------------------------------------------------------------------------
 
-def create_schema(dry_run=False):
-    """Use the unified Flask app to create habitz.db schema."""
+def create_schema(target_db, dry_run=False):
+    """Use the unified Flask app to create the schema in target_db."""
     if dry_run:
         print("[dry-run] skipping schema creation")
         return
 
     sys.path.insert(0, _root)
-    # Import the unified wsgi app — this triggers create_all() for all models
-    print("  bootstrapping schema via Flask apps…")
-    import wsgi  # noqa: F401 – side-effect: creates all tables in habitz.db
+
+    # Point all apps at the target DB before importing wsgi.
+    # All four configs read DATABASE_URL, so setting it here overrides the default.
+    os.environ['DATABASE_URL'] = f'sqlite:///{os.path.abspath(target_db)}'
+
+    print(f"  bootstrapping schema in: {target_db}")
+    import wsgi  # noqa: F401 – side-effect: each create_app() calls db.create_all()
     print("  schema ready.")
 
 
@@ -307,7 +311,7 @@ def main():
 
     # 1. Create schema
     print("=== Step 1: ensure habitz.db schema ===")
-    create_schema(dry_run)
+    create_schema(target_db, dry_run)
 
     # 2. Open connections
     print("\n=== Step 2: open source databases ===")
