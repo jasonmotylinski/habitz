@@ -60,6 +60,17 @@ class User(UserMixin, db.Model):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
+        # Legacy bcrypt hashes (workout_tracker used Flask-Bcrypt before consolidation).
+        # Verify with bcrypt, then silently re-hash to werkzeug format and commit so
+        # the upgrade is permanent and bcrypt is no longer needed after first login.
+        if self.password_hash and self.password_hash.startswith(('$2b$', '$2a$')):
+            import bcrypt as _bcrypt
+            ok = _bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
+            if ok:
+                self.set_password(password)
+                from . import db
+                db.session.commit()
+            return ok
         return check_password_hash(self.password_hash, password)
 
     # --- calorie_tracker computed properties ---
