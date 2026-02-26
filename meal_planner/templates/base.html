@@ -31,9 +31,14 @@
     <!-- Navigation -->
     <nav class="navbar">
         <div class="navbar-container">
-            <a class="navbar-brand" href="{{ url_for('main.index') }}">
-                🍽️ Meals
-            </a>
+            <div style="display:flex;align-items:center;gap:4px;">
+                <a class="navbar-brand" href="{{ url_for('main.index') }}">
+                    🍽️ Meals
+                </a>
+                <a href="/" class="navbar-apps-btn" title="All apps" aria-label="Habitz home">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
+                </a>
+            </div>
             <button class="navbar-toggle" id="mobileMenuToggle" aria-label="Toggle menu">
                 ☰
             </button>
