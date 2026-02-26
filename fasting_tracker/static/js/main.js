@@ -70,7 +70,7 @@ function initDashboard() {
 
 async function fetchActiveFast() {
     try {
-        const res = await fetch('/api/fast/active');
+        const res = await fetch(window.SCRIPT_ROOT + '/api/fast/active');
         const data = await res.json();
         if (data && data.id) {
             activeFast = data;
@@ -84,7 +84,7 @@ async function fetchActiveFast() {
 
 async function startFast() {
     try {
-        const res = await fetch('/api/fast/start', {
+        const res = await fetch(window.SCRIPT_ROOT + '/api/fast/start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ target_hours: selectedHours }),
@@ -106,7 +106,7 @@ async function stopFast() {
     if (!confirm('End your current fast?')) return;
 
     try {
-        const res = await fetch('/api/fast/stop', { method: 'POST' });
+        const res = await fetch(window.SCRIPT_ROOT + '/api/fast/stop', { method: 'POST' });
         if (!res.ok) {
             const err = await res.json();
             alert(err.error || 'Failed to stop fast');
@@ -144,7 +144,7 @@ async function saveStartTime() {
     }
 
     try {
-        const res = await fetch('/api/fast/active', {
+        const res = await fetch(window.SCRIPT_ROOT + '/api/fast/active', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ started_at: localDate.toISOString() }),
@@ -240,7 +240,7 @@ const DAILY_CIRCUMFERENCE = 2 * Math.PI * DAILY_RING_R;
 
 async function fetchWeeklyStats() {
     try {
-        const res = await fetch('/api/stats/weekly');
+        const res = await fetch(window.SCRIPT_ROOT + '/api/stats/weekly');
         const data = await res.json();
         renderDailyRings(data.days);
     } catch (e) {
@@ -358,7 +358,7 @@ function updateCalNavButtons() {
 async function fetchMonthlyStats(year, month) {
     const monthStr = `${year}-${String(month).padStart(2, '0')}`;
     try {
-        const res = await fetch(`/api/stats/monthly?month=${monthStr}`);
+        const res = await fetch(window.SCRIPT_ROOT + `/api/stats/monthly?month=${monthStr}`);
         const data = await res.json();
         renderCalendar(data);
         updateCalNavButtons();
@@ -421,7 +421,7 @@ async function fetchHistory(append = false) {
 
     try {
         const monthStr = `${calendarYear}-${String(calendarMonth).padStart(2, '0')}`;
-        const res = await fetch(`/api/fast/history?page=${historyPage}&month=${monthStr}`);
+        const res = await fetch(window.SCRIPT_ROOT + `/api/fast/history?page=${historyPage}&month=${monthStr}`);
         const data = await res.json();
 
         if (loading) loading.classList.add('hidden');
@@ -491,7 +491,7 @@ async function deleteFast(id, card) {
     if (!confirm('Delete this fast? This cannot be undone.')) return;
 
     try {
-        const res = await fetch(`/api/fast/${id}`, { method: 'DELETE' });
+        const res = await fetch(window.SCRIPT_ROOT + `/api/fast/${id}`, { method: 'DELETE' });
         if (res.ok) {
             card.style.opacity = '0';
             card.style.transform = 'translateX(20px)';

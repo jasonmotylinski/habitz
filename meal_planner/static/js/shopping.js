@@ -31,7 +31,7 @@ function toggleShoppingItem(checkbox, event) {
     shoppingItem.style.opacity = '0.6';
 
     // AJAX request to toggle on server
-    fetch(`/shopping/item/${itemId}/toggle`, {
+    fetch(window.SCRIPT_ROOT + `/shopping/item/${itemId}/toggle`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show loading state
             setButtonLoading($('button[type="submit"]'), true);
 
-            fetch('/shopping/add', {
+            fetch(window.SCRIPT_ROOT + '/shopping/add', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -219,7 +219,7 @@ function deleteItem(itemId, event) {
     shoppingItem.style.pointerEvents = 'none';
 
     // AJAX request to delete on server
-    fetch(`/shopping/item/${itemId}/delete`, {
+    fetch(window.SCRIPT_ROOT + `/shopping/item/${itemId}/delete`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

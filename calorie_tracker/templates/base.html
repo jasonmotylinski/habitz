@@ -63,6 +63,7 @@
         {% block content %}{% endblock %}
     </main>
 
+    <script>window.SCRIPT_ROOT = "{{ request.script_root }}";</script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>

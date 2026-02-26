@@ -35,7 +35,7 @@ function initDashboard() {
             btn.style.pointerEvents = 'none';
 
             try {
-                const resp = await fetch(`/api/log/${logId}`, { method: 'DELETE' });
+                const resp = await fetch(window.SCRIPT_ROOT + `/api/log/${logId}`, { method: 'DELETE' });
                 if (resp.ok) {
                     const entry = btn.closest('.meal-entry');
                     entry.style.transition = 'opacity 0.2s, transform 0.2s';
@@ -111,7 +111,7 @@ function initFoodSearch() {
 
     async function loadRecent() {
         try {
-            const resp = await fetch('/api/foods/recent');
+            const resp = await fetch(window.SCRIPT_ROOT + '/api/foods/recent');
             const data = await resp.json();
             if (data.items && data.items.length > 0) {
                 recentEmpty.classList.add('hidden');
@@ -126,7 +126,7 @@ function initFoodSearch() {
     async function searchFoods(query) {
         const seq = ++searchSeq;
         try {
-            const resp = await fetch(`/api/foods/search?q=${encodeURIComponent(query)}`);
+            const resp = await fetch(window.SCRIPT_ROOT + `/api/foods/search?q=${encodeURIComponent(query)}`);
             const data = await resp.json();
 
             if (seq !== searchSeq) return;  // a newer search has already started
@@ -177,7 +177,7 @@ function initFoodSearch() {
                 try {
                     card.style.opacity = '0.5';
                     card.style.pointerEvents = 'none';
-                    const resp = await fetch('/api/log', {
+                    const resp = await fetch(window.SCRIPT_ROOT + '/api/log', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -225,7 +225,7 @@ function initFoodLog() {
 
     async function loadFood() {
         try {
-            const resp = await fetch(`/api/foods/${foodId}`);
+            const resp = await fetch(window.SCRIPT_ROOT + `/api/foods/${foodId}`);
             foodItem = await resp.json();
 
             nameEl.textContent = foodItem.name;
@@ -274,7 +274,7 @@ function initFoodLog() {
         submitBtn.textContent = 'Logging...';
 
         try {
-            const resp = await fetch('/api/log', {
+            const resp = await fetch(window.SCRIPT_ROOT + '/api/log', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -355,7 +355,7 @@ function initQuickAdd() {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-            const resp = await fetch('/api/log/quick', {
+            const resp = await fetch(window.SCRIPT_ROOT + '/api/log/quick', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ calories, name, meal_type: mt, date, protein_g: protein, carbs_g: carbs, fat_g: fat }),
