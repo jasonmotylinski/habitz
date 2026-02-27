@@ -743,7 +743,7 @@ select.form-control {
 .toast.success { border-color: var(--success); }
 
 /* Modal */
-.modal {
+.modal-overlay {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
@@ -752,59 +752,27 @@ select.form-control {
     justify-content: center;
     z-index: 200;
     padding: 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 
-.modal.hidden {
+.modal-overlay.hidden {
     display: none;
 }
 
-.modal-content {
+.modal {
     background: var(--bg-card);
     border-radius: var(--radius);
     padding: 24px;
     width: 100%;
-    max-width: 400px;
-    max-height: 90vh;
+    max-width: 480px;
+    max-height: 80dvh;
     overflow-y: auto;
 }
 
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-}
-
-.modal-header h2 {
+.modal h2 {
     font-size: 1.1rem;
-    margin: 0;
-}
-
-.close-btn {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 0;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.close-btn:hover { color: var(--text-primary); }
-
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 200;
-    padding: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
 }
 
 .modal-actions {

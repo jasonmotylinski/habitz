@@ -145,11 +145,12 @@ def update_log(log_id):
         new_workout = Workout.query.filter_by(id=new_workout_id, user_id=current_user.id).first_or_404()
 
         # Clear existing sets if switching workout
-        SetLog.query.filter_by(workout_log_id=log.id).delete()
+        for s in log.sets.all():
+            db.session.delete(s)
+        db.session.flush()
 
         # Update the workout
         log.workout_id = new_workout_id
-        db.session.flush()
 
         # Pre-populate sets from new workout template
         workout_exercises = (
