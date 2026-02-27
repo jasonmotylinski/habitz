@@ -269,3 +269,28 @@ document.addEventListener('keydown', function(e) {
 // ===== INITIALIZATION =====
 
 console.log('✓ Main.js loaded');
+
+// ===== APP SWITCHER =====
+(function() {
+    var btn = document.getElementById("appSwitcherBtn");
+    if (!btn) return;
+    var switcher = document.getElementById("appSwitcher");
+    btn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        var isOpen = switcher.classList.toggle("open");
+        btn.setAttribute("aria-expanded", String(isOpen));
+    });
+    document.addEventListener("click", function(e) {
+        if (!switcher.contains(e.target)) {
+            switcher.classList.remove("open");
+            btn.setAttribute("aria-expanded", "false");
+        }
+    });
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape") {
+            switcher.classList.remove("open");
+            btn.setAttribute("aria-expanded", "false");
+        }
+    });
+})();
+
