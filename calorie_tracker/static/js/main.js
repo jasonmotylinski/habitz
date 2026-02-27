@@ -169,7 +169,7 @@ function initFoodSearch() {
                 const isCached = card.dataset.cached === 'true';
 
                 if (isCached && foodData.id) {
-                    window.location.href = `/food/log/${foodData.id}?meal=${mealType}&date=${date}`;
+                    window.location.href = window.SCRIPT_ROOT + `/food/log/${foodData.id}?meal=${mealType}&date=${date}`;
                     return;
                 }
 
@@ -189,7 +189,7 @@ function initFoodSearch() {
                     });
                     if (resp.ok) {
                         // Logged directly, go to dashboard
-                        window.location.href = `/dashboard?date=${date}`;
+                        window.location.href = window.SCRIPT_ROOT + `/dashboard?date=${date}`;
                     }
                 } catch (err) {
                     card.style.opacity = '1';
@@ -286,7 +286,7 @@ function initFoodLog() {
             });
 
             if (resp.ok) {
-                window.location.href = `/dashboard?date=${date}`;
+                window.location.href = window.SCRIPT_ROOT + `/dashboard?date=${date}`;
             } else {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Log Food';
@@ -365,7 +365,7 @@ function initQuickAdd() {
             clearTimeout(timeoutId);
 
             if (resp.ok) {
-                window.location.href = `/dashboard?date=${date}`;
+                window.location.href = window.SCRIPT_ROOT + `/dashboard?date=${date}`;
             } else {
                 let errorMsg = 'Something went wrong.';
                 try {
