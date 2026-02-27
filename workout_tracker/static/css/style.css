@@ -502,6 +502,48 @@ select.form-control {
     color: var(--text-secondary);
 }
 
+.weight-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.weight-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    min-width: 44px;
+}
+
+.weight-input {
+    width: 72px;
+    padding: 5px 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    -moz-appearance: textfield;
+}
+
+.weight-input::-webkit-outer-spin-button,
+.weight-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+
+.weight-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.weight-unit {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
 .cardio-input {
     display: flex;
     align-items: center;

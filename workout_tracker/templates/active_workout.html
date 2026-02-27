@@ -144,7 +144,14 @@ function renderExercises() {
             block.innerHTML = `
                 <div class="exercise-block-header">
                     <h3>${ex.name}</h3>
-                    <span class="detail">${setsCount}×${reps} ${weight ? weight + 'lb' : ''}</span>
+                    <span class="detail">${setsCount}×${reps}</span>
+                </div>
+                <div class="weight-row">
+                    <label class="weight-label">Weight</label>
+                    <input type="number" class="weight-input" value="${weight || ''}" placeholder="—"
+                           step="2.5" min="0"
+                           onchange="updateExerciseWeight(${exId}, this.value)">
+                    <span class="weight-unit">lb</span>
                 </div>
                 <div class="sets-row">
                     ${ex.sets.map(set => {
@@ -228,6 +235,15 @@ async function finishWorkout() {
     await api.put(`/api/logs/${logId}`, payload);
     showToast('Workout complete!', 'success');
     setTimeout(() => window.location.href = SCRIPT_ROOT + '/', 1000);
+}
+
+async function updateExerciseWeight(exerciseId, weightValue) {
+    const weight = weightValue ? parseFloat(weightValue) : null;
+    const setsToUpdate = logData.sets.filter(s => s.exercise_id === exerciseId);
+    setsToUpdate.forEach(s => s.weight = weight);
+    await Promise.all(setsToUpdate.map(s =>
+        api.put(`/api/logs/${logId}/sets/${s.id}`, { weight })
+    ));
 }
 
 async function confirmExit() {
