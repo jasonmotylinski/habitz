@@ -25,7 +25,8 @@ def check_completion(habit, user, today: date) -> bool:
         from workout_tracker.models import WorkoutLog
         return db.session.query(WorkoutLog).filter(
             WorkoutLog.user_id == user.id,
-            func.date(WorkoutLog.started_at) == today,
+            WorkoutLog.completed_at.isnot(None),
+            func.date(WorkoutLog.completed_at) == today,
         ).first() is not None
 
     elif habit.habit_type == 'fasting':
