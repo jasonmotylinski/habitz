@@ -3,15 +3,6 @@
    ======================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Auto-dismiss flash messages
-    document.querySelectorAll('.flash').forEach(flash => {
-        setTimeout(() => {
-            flash.style.opacity = '0';
-            flash.style.transform = 'translateY(-8px)';
-            setTimeout(() => flash.remove(), 300);
-        }, 3000);
-    });
-
     // Dashboard timer
     initDashboard();
 
@@ -505,28 +496,4 @@ async function deleteFast(id, card) {
         console.error('Failed to delete fast:', e);
     }
 }
-
-// ===== APP SWITCHER =====
-(function() {
-    var btn = document.getElementById("appSwitcherBtn");
-    if (!btn) return;
-    var switcher = document.getElementById("appSwitcher");
-    btn.addEventListener("click", function(e) {
-        e.stopPropagation();
-        var isOpen = switcher.classList.toggle("open");
-        btn.setAttribute("aria-expanded", String(isOpen));
-    });
-    document.addEventListener("click", function(e) {
-        if (!switcher.contains(e.target)) {
-            switcher.classList.remove("open");
-            btn.setAttribute("aria-expanded", "false");
-        }
-    });
-    document.addEventListener("keydown", function(e) {
-        if (e.key === "Escape") {
-            switcher.classList.remove("open");
-            btn.setAttribute("aria-expanded", "false");
-        }
-    });
-})();
 

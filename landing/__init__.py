@@ -1,5 +1,5 @@
-from flask import Flask, render_template
-from flask_login import LoginManager, current_user, login_required
+from flask import Flask
+from flask_login import LoginManager
 
 
 def create_app():
@@ -13,6 +13,12 @@ def create_app():
 
     from shared import db, User
     db.init_app(app)
+
+    # Import models so create_all() sees them
+    from . import models  # noqa: F401
+
+    with app.app_context():
+        db.create_all()
 
     login_manager = LoginManager()
     login_manager.init_app(app)
@@ -29,9 +35,10 @@ def create_app():
     from .auth import auth_bp
     app.register_blueprint(auth_bp)
 
-    @app.route('/')
-    @login_required
-    def index():
-        return render_template('index.html', user=current_user)
+    from .habits import habits_bp
+    app.register_blueprint(habits_bp)
+
+    from .api import api_bp
+    app.register_blueprint(api_bp)
 
     return app

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f1117">
+    <title>{{ 'Edit Habit' if habit else 'New Habit' }} — Habitz</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="stylesheet" href="/static/css/habits.css">
+</head>
+<body>
+    <header class="app-header">
+        <a href="/" class="brand">habitz</a>
+        <div class="header-right">
+            <div class="user-bar">
+                <span class="username">{{ user.username or user.email }}</span>
+                <a href="/logout" class="logout-link">Log out</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content form-page">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="form-header">
+            <a href="/" class="back-link">
+                <svg viewBox="0 0 16 16" fill="none">
+                    <path d="M10 4L6 8l4 4" stroke="currentColor" stroke-width="1.5"
+                          stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Back
+            </a>
+            <h1 class="form-title">{{ 'Edit habit' if habit else 'New habit' }}</h1>
+        </div>
+
+        <form method="post"
+              action="{{ '/habits/' ~ habit.id ~ '/edit' if habit else '/habits/new' }}"
+              class="habit-form">
+
+            <div class="form-group">
+                <label class="form-label" for="name">Name</label>
+                <input class="form-input" type="text" id="name" name="name"
+                       value="{{ habit.name if habit else '' }}"
+                       placeholder="e.g. Drink water, Meditate…"
+                       required maxlength="100" autofocus>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="description">Description <span class="form-optional">optional</span></label>
+                <textarea class="form-input form-textarea" id="description" name="description"
+                          placeholder="Any notes about this habit…"
+                          maxlength="500">{{ habit.description if habit else '' }}</textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group form-group-icon">
+                    <label class="form-label" for="icon">Icon</label>
+                    <input class="form-input form-input-icon" type="text" id="icon" name="icon"
+                           value="{{ habit.icon if habit else '✓' }}"
+                           maxlength="10" placeholder="✓">
+                </div>
+                <div class="form-group form-group-color">
+                    <label class="form-label" for="color">Color</label>
+                    <input class="form-color" type="color" id="color" name="color"
+                           value="{{ habit.color if habit else '#4A90E2' }}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="habit_type">Type</label>
+                <select class="form-input form-select" id="habit_type" name="habit_type">
+                    {% set current_type = habit.habit_type if habit else 'manual' %}
+                    <option value="manual"   {% if current_type == 'manual'   %}selected{% endif %}>Manual — tap to complete</option>
+                    <option value="workout"  {% if current_type == 'workout'  %}selected{% endif %}>Workout — auto from /workouts</option>
+                    <option value="calories" {% if current_type == 'calories' %}selected{% endif %}>Calories — auto from /calories</option>
+                    <option value="fasting"  {% if current_type == 'fasting'  %}selected{% endif %}>Fasting — auto from /fasting</option>
+                    <option value="meals"    {% if current_type == 'meals'    %}selected{% endif %}>Meals — auto from /meals</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="sort_order">Order <span class="form-optional">lower = first</span></label>
+                <input class="form-input form-input-sm" type="number" id="sort_order" name="sort_order"
+                       value="{{ habit.sort_order if habit else 0 }}"
+                       min="0" max="999">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">
+                    {{ 'Save changes' if habit else 'Create habit' }}
+                </button>
+                <a href="/" class="btn-ghost">Cancel</a>
+            </div>
+        </form>
+
+        {% if habit %}
+        <div class="danger-zone">
+            <p class="danger-label">Danger zone</p>
+            <div class="danger-actions">
+                <form method="post" action="/habits/{{ habit.id }}/delete">
+                    <input type="hidden" name="action" value="archive">
+                    <button type="submit" class="btn-danger-ghost">Archive habit</button>
+                </form>
+                <form method="post" action="/habits/{{ habit.id }}/delete"
+                      onsubmit="return confirm('Permanently delete this habit and all its history?')">
+                    <input type="hidden" name="action" value="delete">
+                    <button type="submit" class="btn-danger">Delete habit</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </main>
+</body>
+</html>

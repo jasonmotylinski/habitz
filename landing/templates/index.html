@@ -7,89 +7,131 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Habitz">
-    <title>Habitz</title>
+    <title>Habitz — Today</title>
     <link rel="manifest" href="/static/manifest.json">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="apple-touch-icon" href="/static/icon-180.png">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #0f1117;
-            color: #e8eaf0;
-            min-height: 100dvh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: calc(env(safe-area-inset-top) + 4rem) max(2rem, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 2rem) max(2rem, env(safe-area-inset-left));
-        }
-        header {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding: calc(env(safe-area-inset-top) + 0.75rem) 1.5rem 0.75rem;
-        }
-        .user-bar { display: flex; align-items: center; gap: 0.75rem; font-size: 0.875rem; color: #8b8fa8; }
-        .logout-link { color: #8b8fa8; text-decoration: none; transition: color 0.15s; }
-        .logout-link:hover { color: #e8eaf0; }
-        h1 { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 0.5rem; }
-        .subtitle { color: #8b8fa8; margin-bottom: 3rem; }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1rem;
-            width: 100%;
-            max-width: 860px;
-        }
-        .card {
-            background: #1a1d27;
-            border: 1px solid #2a2d3a;
-            border-radius: 12px;
-            padding: 1.5rem;
-            text-decoration: none;
-            color: inherit;
-            transition: border-color 0.15s, transform 0.15s;
-        }
-        .card:hover { border-color: #4a6cf7; transform: translateY(-2px); }
-        .card-icon { font-size: 2rem; margin-bottom: 0.75rem; }
-        .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem; }
-        .card-desc { font-size: 0.875rem; color: #8b8fa8; }
-    </style>
+    <link rel="stylesheet" href="/static/css/habits.css">
 </head>
 <body>
-    <header>
-        <div class="user-bar">
-            <span>{{ user.username or user.email }}</span>
-            <a href="/logout" class="logout-link">Log out</a>
+    <header class="app-header">
+        <a href="/" class="brand">habitz</a>
+        <div class="header-right">
+            <a href="/habits/new" class="btn-new">+ New habit</a>
+            <div class="user-bar">
+                <span class="username">{{ user.username or user.email }}</span>
+                <a href="/logout" class="logout-link">Log out</a>
+            </div>
         </div>
     </header>
 
-    <h1>Habitz</h1>
-    <p class="subtitle">Your wellness platform</p>
-    <div class="grid">
-        <a href="/meals/" class="card">
-            <div class="card-icon">🍽️</div>
-            <div class="card-title">Meal Planner</div>
-            <div class="card-desc">Recipes, weekly planning, shopping lists</div>
-        </a>
-        <a href="/calories/" class="card">
-            <div class="card-icon">📊</div>
-            <div class="card-title">Calorie Tracker</div>
-            <div class="card-desc">Daily calories and macro tracking</div>
-        </a>
-        <a href="/fasting/" class="card">
-            <div class="card-icon">⏱️</div>
-            <div class="card-title">Fasting Tracker</div>
-            <div class="card-desc">Intermittent fasting timers and goals</div>
-        </a>
-        <a href="/workouts/" class="card">
-            <div class="card-icon">🏋️</div>
-            <div class="card-title">Workout Tracker</div>
-            <div class="card-desc">Programs, exercise logging, progress</div>
-        </a>
-    </div>
+    <main class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="daily-header">
+            <div class="today-date">{{ today.strftime('%A, %B %-d') }}</div>
+            {% if total > 0 %}
+            <div class="daily-progress"
+                 data-completed="{{ completed }}"
+                 data-total="{{ total }}">
+                <div class="progress-summary">
+                    <span class="progress-count">{{ completed }} of {{ total }} done</span>
+                    <span class="progress-pct">{{ pct }}%</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: {{ pct }}%"></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if habit_data %}
+        <ul class="habit-list" role="list">
+            {% for item in habit_data %}
+            <li class="habit-row {% if item.done %}is-done{% endif %}"
+                data-id="{{ item.habit.id }}"
+                {% if not item.link %}data-manual="true"{% endif %}>
+
+                {% if item.link %}
+                <a href="{{ item.link }}" class="habit-row-inner" aria-label="{{ item.habit.name }}{% if item.done %} — completed{% endif %}">
+                {% else %}
+                <div class="habit-row-inner" role="button" tabindex="0"
+                     aria-label="{{ item.habit.name }}{% if item.done %} — completed{% endif %}"
+                     aria-pressed="{{ 'true' if item.done else 'false' }}">
+                {% endif %}
+
+                    <div class="habit-icon"
+                         style="--habit-color: {{ item.habit.color }}">{{ item.habit.icon }}</div>
+
+                    <div class="habit-info">
+                        <div class="habit-name">{{ item.habit.name }}</div>
+                        {% if item.streak > 0 %}
+                        <div class="habit-streak">🔥 {{ item.streak }} day streak</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="habit-actions">
+                        <div class="habit-check {% if item.done %}done{% endif %}" aria-hidden="true">
+                            <svg class="check-icon" viewBox="0 0 16 16" fill="none">
+                                <path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="2"
+                                      stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        {% if item.link %}
+                        <div class="habit-arrow" aria-hidden="true">
+                            <svg viewBox="0 0 16 16" fill="none">
+                                <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5"
+                                      stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                {% if item.link %}
+                </a>
+                {% else %}
+                </div>
+                {% endif %}
+
+                <a href="/habits/{{ item.habit.id }}/edit" class="habit-edit-btn"
+                   aria-label="Edit {{ item.habit.name }}">
+                    <svg viewBox="0 0 16 16" fill="none">
+                        <path d="M11 2.5a1.5 1.5 0 012.121 2.121L5 13H3v-2L11 2.5z"
+                              stroke="currentColor" stroke-width="1.4"
+                              stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <div class="list-footer">
+            <a href="/habits/new" class="btn-add-inline">+ Add a habit</a>
+        </div>
+
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-glyph">🌱</div>
+            <h2 class="empty-heading">Start your daily practice</h2>
+            <p class="empty-body">Build habits that stick. Connect them to your apps or track anything manually.</p>
+            <div class="empty-actions">
+                <a href="/habits/new" class="btn-primary">Add your first habit</a>
+                <form action="/habits/quick-add-apps" method="post">
+                    <button type="submit" class="btn-secondary">Quick-add app habits</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </main>
+
+    <script src="/static/js/habits.js"></script>
 </body>
 </html>
