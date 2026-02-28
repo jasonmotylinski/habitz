@@ -127,13 +127,13 @@
       wrap.className = 'daily-ring-wrap' + (isToday ? ' today' : '');
 
       wrap.innerHTML =
-        '<svg class="ring-svg" viewBox="0 0 60 60">' +
+        '<svg class="ring-svg daily-ring-svg" viewBox="0 0 60 60">' +
           '<circle class="ring-bg" cx="30" cy="30" r="' + RING_R + '" />' +
           '<circle class="ring-progress' + completeClass + '"' +
             ' cx="30" cy="30" r="' + RING_R + '"' +
             ' stroke-dasharray="' + RING_CIRC.toFixed(2) + '"' +
             ' stroke-dashoffset="' + offset.toFixed(2) + '" />' +
-          '<text class="cal-day-num" x="30" y="30">' +
+          '<text class="daily-ring-day" x="30" y="30" text-anchor="middle" dominant-baseline="central" transform="rotate(90,30,30)">' +
             day.label +
           '</text>' +
         '</svg>' +
