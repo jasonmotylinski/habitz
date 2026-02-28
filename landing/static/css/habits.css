@@ -823,7 +823,26 @@ body {
 }
 
 .history-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     margin-bottom: 2rem;
+}
+
+.history-back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    color: var(--text-muted);
+    transition: color 0.15s, background 0.15s;
+}
+
+.history-back-btn:hover {
+    color: var(--text);
+    background: var(--surface-2);
 }
 
 .history-title {
