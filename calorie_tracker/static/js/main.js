@@ -8,10 +8,21 @@ document.addEventListener('DOMContentLoaded', () => {
     initFoodLog();
     initQuickAdd();
     initSettings();
+    initEditModal();
 });
 
 /* ---- Dashboard ---- */
 function initDashboard() {
+    document.querySelectorAll('.meal-entry-edit').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const logId = btn.dataset.logId;
+            const foodId = btn.dataset.foodId;
+            const servings = parseFloat(btn.dataset.servings) || 1;
+            openEditModal(logId, foodId, servings);
+        });
+    });
+
     document.querySelectorAll('.meal-entry-delete').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.preventDefault();
@@ -36,6 +47,104 @@ function initDashboard() {
             }
         });
     });
+}
+
+/* ---- Edit Modal ---- */
+let editState = {
+    logId: null,
+    foodItem: null,
+};
+
+function initEditModal() {
+    const modal = document.getElementById('edit-modal');
+    if (!modal) return;
+
+    const closeBtn = modal.querySelector('.modal-close');
+    const cancelBtn = document.getElementById('edit-cancel');
+    const saveBtn = document.getElementById('edit-save');
+    const servingInput = document.getElementById('edit-servings');
+    const minusBtn = document.getElementById('edit-serving-minus');
+    const plusBtn = document.getElementById('edit-serving-plus');
+    const overlay = modal.querySelector('.modal-overlay');
+
+    function closeModal() {
+        modal.classList.add('hidden');
+        editState = { logId: null, foodItem: null };
+    }
+
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', closeModal);
+
+    minusBtn.addEventListener('click', () => {
+        const val = parseFloat(servingInput.value) || 1;
+        if (val > 0.5) {
+            servingInput.value = (val - 0.5).toFixed(1);
+            updateEditNutrition();
+        }
+    });
+
+    plusBtn.addEventListener('click', () => {
+        const val = parseFloat(servingInput.value) || 1;
+        servingInput.value = (val + 0.5).toFixed(1);
+        updateEditNutrition();
+    });
+
+    servingInput.addEventListener('input', updateEditNutrition);
+
+    saveBtn.addEventListener('click', async () => {
+        if (!editState.logId) return;
+
+        const newServings = parseFloat(servingInput.value) || 1;
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+
+        try {
+            const resp = await fetch(window.SCRIPT_ROOT + `/api/log/${editState.logId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ servings: newServings }),
+            });
+
+            if (resp.ok) {
+                closeModal();
+                location.reload();
+            } else {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+            }
+        } catch (err) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+        }
+    });
+}
+
+function updateEditNutrition() {
+    if (!editState.foodItem) return;
+    const s = parseFloat(document.getElementById('edit-servings').value) || 1;
+    document.getElementById('edit-nut-calories').textContent = Math.round(editState.foodItem.calories * s);
+    document.getElementById('edit-nut-protein').textContent = Math.round(editState.foodItem.protein_g * s * 10) / 10;
+    document.getElementById('edit-nut-carbs').textContent = Math.round(editState.foodItem.carbs_g * s * 10) / 10;
+    document.getElementById('edit-nut-fat').textContent = Math.round(editState.foodItem.fat_g * s * 10) / 10;
+}
+
+async function openEditModal(logId, foodId, servings) {
+    const modal = document.getElementById('edit-modal');
+    if (!modal) return;
+
+    // Fetch the food item details
+    try {
+        const resp = await fetch(window.SCRIPT_ROOT + `/api/foods/${foodId}`);
+        editState.foodItem = await resp.json();
+        editState.logId = logId;
+
+        document.getElementById('edit-servings').value = servings.toFixed(1);
+        updateEditNutrition();
+        modal.classList.remove('hidden');
+    } catch (err) {
+        console.error('Failed to load food item:', err);
+    }
 }
 
 /* ---- Food Search ---- */

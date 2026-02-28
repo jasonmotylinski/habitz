@@ -109,6 +109,9 @@
                     </div>
                     <div class="meal-entry-right">
                         <span class="meal-entry-cal">{{ entry.calories|int }}</span>
+                        <button class="meal-entry-edit" data-log-id="{{ entry.id }}" data-servings="{{ entry.servings }}" data-food-id="{{ entry.food_item_id }}" aria-label="Edit entry">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                        </button>
                         <button class="meal-entry-delete" data-log-id="{{ entry.id }}" aria-label="Delete entry">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                         </button>
@@ -143,6 +146,53 @@
                 <span class="weekly-bar-label">{{ day.day }}</span>
             </div>
             {% endfor %}
+        </div>
+    </div>
+
+    <!-- Edit Entry Modal -->
+    <div id="edit-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Entry</h2>
+                <button class="modal-close" aria-label="Close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="edit-form">
+                    <div class="form-group">
+                        <label for="edit-servings">Serving Size</label>
+                        <div class="serving-controls">
+                            <button class="serving-btn" id="edit-serving-minus" aria-label="Decrease servings">−</button>
+                            <input type="number" id="edit-servings" step="0.5" min="0.5" value="1">
+                            <button class="serving-btn" id="edit-serving-plus" aria-label="Increase servings">+</button>
+                        </div>
+                    </div>
+                    <div id="edit-nutrition" class="nutrition-display">
+                        <div class="nutrition-item">
+                            <span>Calories</span>
+                            <span id="edit-nut-calories">0</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span>Protein</span>
+                            <span id="edit-nut-protein">0</span>g
+                        </div>
+                        <div class="nutrition-item">
+                            <span>Carbs</span>
+                            <span id="edit-nut-carbs">0</span>g
+                        </div>
+                        <div class="nutrition-item">
+                            <span>Fat</span>
+                            <span id="edit-nut-fat">0</span>g
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--ghost" id="edit-cancel">Cancel</button>
+                <button class="btn btn--primary" id="edit-save">Save</button>
+            </div>
         </div>
     </div>
 </div>
