@@ -92,3 +92,115 @@
     });
   });
 })();
+
+// ── Habit calendar ────────────────────────────────────────────────────────────
+(function () {
+  'use strict';
+
+  var calGrid = document.getElementById('cal-grid');
+  if (!calGrid) return;
+
+  var RING_R    = 22;
+  var RING_CIRC = 2 * Math.PI * RING_R;
+
+  var MONTH_NAMES = [
+    'January','February','March','April','May','June',
+    'July','August','September','October','November','December'
+  ];
+
+  var calYear, calMonth;
+
+  // ── Fetch & render ──────────────────────────────────────────────────────────
+
+  function fetchCalendar(year, month) {
+    var monthStr = year + '-' + String(month).padStart(2, '0');
+    fetch('/api/habits/calendar?month=' + monthStr, { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(renderCalendar)
+      .catch(function (e) { console.error('Calendar fetch failed', e); });
+  }
+
+  function renderCalendar(data) {
+    var label = document.getElementById('cal-month-label');
+    if (label) label.textContent = MONTH_NAMES[data.month - 1] + ' ' + data.year;
+
+    calGrid.innerHTML = '';
+
+    var today = new Date().toISOString().split('T')[0];
+
+    // Blank cells before the 1st
+    var firstWeekday = data.days[0].weekday; // 0=Mon
+    for (var i = 0; i < firstWeekday; i++) {
+      var empty = document.createElement('div');
+      empty.className = 'cal-day cal-day--empty';
+      calGrid.appendChild(empty);
+    }
+
+    data.days.forEach(function (day) {
+      var isToday  = day.date === today;
+      var isFuture = day.date > today;
+      var offset   = isFuture ? RING_CIRC : RING_CIRC * (1 - day.progress);
+      var completeClass = (!isFuture && day.all_done) ? ' ring-complete' : '';
+
+      var cell = document.createElement('div');
+      cell.className = 'cal-day' + (isToday ? ' cal-day--today' : '');
+      cell.title = day.total > 0
+        ? day.completed + ' / ' + day.total + ' habits'
+        : '';
+
+      cell.innerHTML =
+        '<svg class="ring-svg" viewBox="0 0 60 60">' +
+          '<circle class="ring-bg" cx="30" cy="30" r="' + RING_R + '" />' +
+          '<circle class="ring-progress' + completeClass + '"' +
+            ' cx="30" cy="30" r="' + RING_R + '"' +
+            ' stroke-dasharray="' + RING_CIRC.toFixed(2) + '"' +
+            ' stroke-dashoffset="' + offset.toFixed(2) + '" />' +
+          '<text class="cal-day-num" x="30" y="30"' +
+            ' transform="rotate(90,30,30)"' +
+            ' text-anchor="middle" dominant-baseline="central">' +
+            day.day +
+          '</text>' +
+        '</svg>';
+
+      calGrid.appendChild(cell);
+    });
+
+    updateCalNav();
+  }
+
+  // ── Navigation ──────────────────────────────────────────────────────────────
+
+  function updateCalNav() {
+    var now      = new Date();
+    var nextBtn  = document.getElementById('cal-next');
+    var atNow    = calYear === now.getFullYear() && calMonth === now.getMonth() + 1;
+    if (nextBtn) nextBtn.disabled = atNow;
+  }
+
+  var prevBtn = document.getElementById('cal-prev');
+  var nextBtn = document.getElementById('cal-next');
+
+  if (prevBtn) {
+    prevBtn.addEventListener('click', function () {
+      calMonth--;
+      if (calMonth < 1) { calMonth = 12; calYear--; }
+      fetchCalendar(calYear, calMonth);
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener('click', function () {
+      calMonth++;
+      if (calMonth > 12) { calMonth = 1; calYear++; }
+      fetchCalendar(calYear, calMonth);
+    });
+  }
+
+  // ── Init ────────────────────────────────────────────────────────────────────
+
+  var now  = new Date();
+  calYear  = now.getFullYear();
+  calMonth = now.getMonth() + 1;
+  fetchCalendar(calYear, calMonth);
+
+})();
