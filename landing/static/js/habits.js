@@ -93,7 +93,60 @@
   });
 })();
 
-// ── Habit calendar ────────────────────────────────────────────────────────────
+// ── Weekly stats for dashboard ────────────────────────────────────────────────
+(function () {
+  'use strict';
+
+  var dailyRings = document.getElementById('daily-rings');
+  if (!dailyRings) return;
+
+  var RING_R    = 22;
+  var RING_CIRC = 2 * Math.PI * RING_R;
+
+  function fetchWeeklyStats() {
+    fetch('/api/habits/weekly', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(renderWeekly)
+      .catch(function (e) { console.error('Weekly fetch failed', e); });
+  }
+
+  function renderWeekly(data) {
+    if (!data.days || data.days.length === 0) return;
+
+    dailyRings.innerHTML = '';
+    var today = new Date().toISOString().split('T')[0];
+
+    data.days.forEach(function (day) {
+      var isToday = day.date === today;
+      var offset = day.total > 0
+        ? RING_CIRC * (1 - day.completed / day.total)
+        : RING_CIRC;
+      var completeClass = day.total > 0 && day.completed === day.total ? ' ring-complete' : '';
+
+      var wrap = document.createElement('div');
+      wrap.className = 'daily-ring-wrap' + (isToday ? ' today' : '');
+
+      wrap.innerHTML =
+        '<svg class="ring-svg" viewBox="0 0 60 60">' +
+          '<circle class="ring-bg" cx="30" cy="30" r="' + RING_R + '" />' +
+          '<circle class="ring-progress' + completeClass + '"' +
+            ' cx="30" cy="30" r="' + RING_R + '"' +
+            ' stroke-dasharray="' + RING_CIRC.toFixed(2) + '"' +
+            ' stroke-dashoffset="' + offset.toFixed(2) + '" />' +
+          '<text class="cal-day-num" x="30" y="30">' +
+            day.label +
+          '</text>' +
+        '</svg>' +
+        '<span class="daily-ring-count">' + day.completed + '/' + day.total + '</span>';
+
+      dailyRings.appendChild(wrap);
+    });
+  }
+
+  fetchWeeklyStats();
+})();
+
+// ── Habit calendar (history page) ────────────────────────────────────────────────
 (function () {
   'use strict';
 

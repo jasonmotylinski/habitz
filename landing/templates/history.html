@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f1117">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Habitz">
+    <title>Habitz — History</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="apple-touch-icon" href="/static/icon-180.png">
+    <link rel="stylesheet" href="/static/css/habits.css">
+    <link rel="stylesheet" href="/static/shared/habitz.css">
+</head>
+<body>
+    <header class="app-header">
+        <div style="display:flex;align-items:center;gap:4px;">
+            <div class="app-switcher" id="appSwitcher">
+                <button class="app-switcher-btn" id="appSwitcherBtn" aria-label="Switch app" aria-expanded="false" type="button">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
+                </button>
+                <div class="app-switcher-menu" role="menu">
+                    <div class="app-switcher-grid">
+                        <a href="/meals/" class="app-tile" role="menuitem" title="Meal Planner">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
+                            <span>Meals</span>
+                        </a>
+                        <a href="/workouts/" class="app-tile" role="menuitem" title="Workout Tracker">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="10" width="4" height="4" rx="1"/><rect x="19" y="10" width="4" height="4" rx="1"/><rect x="5" y="7" width="2" height="10" rx="1"/><rect x="17" y="7" width="2" height="10" rx="1"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
+                            <span>Workouts</span>
+                        </a>
+                        <a href="/calories/" class="app-tile" role="menuitem" title="Calorie Tracker">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4 6"/><circle cx="12" cy="12" r="4" fill="currentColor" opacity="0.5"/></svg>
+                            <span>Calories</span>
+                        </a>
+                        <a href="/fasting/" class="app-tile" role="menuitem" title="Fasting Tracker">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <span>Fasting</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <a href="/" class="brand">habitz</a>
+        </div>
+        <div class="header-right">
+            <a href="/habits/new" class="btn-new">+ New habit</a>
+            <div class="user-bar">
+                <span class="username">{{ user.username or user.email }}</span>
+                <a href="/logout" class="logout-link">Log out</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="history-page">
+            <div class="history-header">
+                <h1 class="history-title">History</h1>
+            </div>
+
+            <!-- Calendar -->
+            <section class="cal-section">
+            <div id="calendar-view">
+                <div class="cal-nav">
+                    <button class="cal-nav-btn" id="cal-prev" title="Previous month">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <span class="cal-month-label" id="cal-month-label"></span>
+                    <button class="cal-nav-btn" id="cal-next" title="Next month">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                </div>
+
+                <div class="cal-weekdays">
+                    <span class="cal-weekday">M</span>
+                    <span class="cal-weekday">T</span>
+                    <span class="cal-weekday">W</span>
+                    <span class="cal-weekday">T</span>
+                    <span class="cal-weekday">F</span>
+                    <span class="cal-weekday">S</span>
+                    <span class="cal-weekday">S</span>
+                </div>
+
+                <div class="cal-grid" id="cal-grid"></div>
+            </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="/static/js/habits.js"></script>
+    <script src="/static/shared/habitz.js"></script>
+</body>
+</html>

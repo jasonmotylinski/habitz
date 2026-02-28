@@ -25,6 +25,12 @@ APP_LINKS = {
 }
 
 
+@habits_bp.route('/history')
+@login_required
+def history():
+    return render_template('history.html', user=current_user)
+
+
 @habits_bp.route('/')
 @login_required
 def index():

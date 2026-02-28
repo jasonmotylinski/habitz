@@ -1,5 +1,5 @@
 import calendar as _cal
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
@@ -86,3 +86,42 @@ def habits_calendar():
         })
 
     return jsonify({'year': year, 'month': month, 'days': days})
+
+
+@api_bp.route('/habits/weekly')
+@login_required
+def habits_weekly():
+    today = date.today()
+    # Get the last 7 days (including today)
+    start_date = today - timedelta(days=6)
+
+    total = Habit.query.filter_by(user_id=current_user.id, active=True).count()
+
+    logs = HabitLog.query.filter(
+        HabitLog.user_id == current_user.id,
+        HabitLog.completed_date >= start_date,
+        HabitLog.completed_date <= today,
+    ).all()
+
+    by_day = {}
+    for log in logs:
+        d = log.completed_date
+        by_day[d] = by_day.get(d, 0) + 1
+
+    days = []
+    day_labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    for i in range(7):
+        day = start_date + timedelta(days=i)
+        completed = by_day.get(day, 0)
+        progress = round(min(1.0, completed / total), 4) if total > 0 else 0.0
+        day_label = day_labels[day.weekday()]
+        days.append({
+            'date': day.isoformat(),
+            'label': day_label,
+            'completed': completed,
+            'total': total,
+            'progress': progress,
+            'is_today': day == today,
+        })
+
+    return jsonify({'days': days})

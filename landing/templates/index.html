@@ -160,29 +160,12 @@
         {% endif %}
 
         {% if total > 0 %}
-        <section class="cal-section">
-            <div class="cal-section-header">
-                <span class="cal-section-title">History</span>
-                <div class="cal-nav">
-                    <button class="cal-nav-btn" id="cal-prev" title="Previous month">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                    </button>
-                    <span class="cal-month-label" id="cal-month-label"></span>
-                    <button class="cal-nav-btn" id="cal-next" title="Next month">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                    </button>
-                </div>
+        <section class="weekly-section">
+            <h2 class="weekly-title">This week</h2>
+            <div class="daily-rings" id="daily-rings"></div>
+            <div class="weekly-footer">
+                <a href="/habits/history" class="weekly-view-all">View full history →</a>
             </div>
-            <div class="cal-weekdays">
-                <span class="cal-weekday">M</span>
-                <span class="cal-weekday">T</span>
-                <span class="cal-weekday">W</span>
-                <span class="cal-weekday">T</span>
-                <span class="cal-weekday">F</span>
-                <span class="cal-weekday">S</span>
-                <span class="cal-weekday">S</span>
-            </div>
-            <div class="cal-grid" id="cal-grid"></div>
         </section>
         {% endif %}
     </main>

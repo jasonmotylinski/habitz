@@ -593,6 +593,74 @@ body {
 
 /* ── Calendar section ────────────────────────────── */
 
+/* ── Weekly view (dashboard) ─────────────────────────────────── */
+
+.weekly-section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    padding-bottom: 1rem;
+}
+
+.weekly-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+}
+
+.daily-rings {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.daily-ring-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.daily-ring-wrap.today .ring-svg {
+    filter: drop-shadow(0 0 5px rgba(74, 108, 247, 0.45));
+}
+
+.daily-ring-wrap .ring-svg {
+    width: 48px;
+    height: 48px;
+    transform: rotate(-90deg);
+    overflow: visible;
+    display: block;
+}
+
+.daily-ring-count {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-dim);
+}
+
+.weekly-footer {
+    text-align: center;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+}
+
+.weekly-view-all {
+    font-size: 0.8125rem;
+    color: var(--accent);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.weekly-view-all:hover {
+    color: var(--accent-light);
+}
+
+/* ── Calendar (history page) ─────────────────────────────────── */
+
 .cal-section {
     margin-top: 2rem;
     padding-top: 1.5rem;
@@ -735,4 +803,21 @@ body {
 
 .habit-check.pop {
     animation: pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── History page ────────────────────────────────── */
+
+.history-page {
+    max-width: 100%;
+}
+
+.history-header {
+    margin-bottom: 2rem;
+}
+
+.history-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
 }
