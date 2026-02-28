@@ -1,22 +1,22 @@
 {
-  "name": "Meals",
+  "name": "Meal Planner",
   "short_name": "Meals",
   "description": "Plan your weekly meals and build shopping lists.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/meals/",
+  "scope": "/meals/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#F8F5F0",
   "theme_color": "#87A878",
   "icons": [
     {
-      "src": "/static/icon-192.png",
+      "src": "/meals/static/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/static/icon-512.png",
+      "src": "/meals/static/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
