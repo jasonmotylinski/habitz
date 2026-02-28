@@ -46,7 +46,7 @@ def main():
     con = sqlite3.connect(db_path)
     try:
         cur = con.execute(
-            "SELECT id, email FROM user WHERE email = ?", (args.email,)
+            "SELECT id, email FROM user WHERE lower(email) = lower(?)", (args.email,)
         )
         row = cur.fetchone()
         if row is None:
