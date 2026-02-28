@@ -290,7 +290,7 @@ function selectShoppingList(listId, listName, ingredients) {
 
             // Redirect to shopping list after brief delay
             setTimeout(() => {
-                window.location.href = `/shopping/${listId}`;
+                window.location.href = window.SCRIPT_ROOT + `/shopping/${listId}`;
             }, 500);
         } else {
             alert('Error adding ingredients: ' + (data.message || 'Unknown error'));
