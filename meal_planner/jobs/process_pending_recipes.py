@@ -33,6 +33,10 @@ logger = logging.getLogger(__name__)
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+# Load .env before create_app() so os.environ has ANTHROPIC_API_KEY etc.
+from dotenv import load_dotenv
+load_dotenv(project_root / '.env')
+
 try:
     from meal_planner import create_app
     from meal_planner.models import MealPlan, Meal
