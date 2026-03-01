@@ -43,6 +43,11 @@ try:
     from meal_planner.recipe_importer import import_recipe_from_url, extract_domain_name
     from shared import db
     from anthropic import Anthropic
+    # Import all models that User has relationships to so SQLAlchemy can resolve
+    # string-based relationship references when the mapper configures.
+    import workout_tracker.models  # noqa: F401 – registers Program, Workout, Exercise, WorkoutLog
+    import calorie_tracker.models  # noqa: F401 – registers FoodLog
+    import fasting_tracker.models  # noqa: F401 – registers Fast
 except ImportError as e:
     logger.error(f"Failed to import required modules: {e}")
     sys.exit(1)
