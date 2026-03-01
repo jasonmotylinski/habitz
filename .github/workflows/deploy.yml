@@ -56,7 +56,7 @@ jobs:
       - name: Install frontend test dependencies
         if: steps.package_check.outputs.exists == 'true'
         run: |
-          npm install --save-dev jest @testing-library/dom @testing-library/jest-dom
+          npm install --save-dev jest jest-environment-jsdom @testing-library/dom @testing-library/jest-dom
       
       - name: Run frontend tests (Jest)
         if: steps.package_check.outputs.exists == 'true'

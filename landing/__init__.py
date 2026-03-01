@@ -1,11 +1,14 @@
 from flask import Flask
 from flask_login import LoginManager
+from flask_migrate import Migrate
+
+migrate = Migrate()
 
 
 def create_app():
     from dotenv import load_dotenv
     import os
-    
+
     # Only load .env if DATABASE_URL is not already set (e.g., during tests or with explicit env vars)
     if 'DATABASE_URL' not in os.environ:
         load_dotenv()
@@ -17,12 +20,10 @@ def create_app():
 
     from shared import db, User
     db.init_app(app)
+    migrate.init_app(app, db)
 
-    # Import models so create_all() sees them
+    # Import models so Migrate sees them
     from . import models  # noqa: F401
-
-    with app.app_context():
-        db.create_all()
 
     login_manager = LoginManager()
     login_manager.init_app(app)

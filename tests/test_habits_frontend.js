@@ -51,7 +51,8 @@ describe('Date Navigation', () => {
   });
 
   test('should allow navigation to past dates', () => {
-    const today = new Date('2026-02-28');
+    // Use noon local time to avoid UTC-midnight-to-local-date shift
+    const today = new Date('2026-02-28T12:00:00');
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
@@ -64,7 +65,8 @@ describe('Date Navigation', () => {
   });
 
   test('should format dates correctly (YYYY-MM-DD)', () => {
-    const testDate = new Date('2026-03-05');
+    // Use noon local time to avoid UTC-midnight-to-local-date shift
+    const testDate = new Date('2026-03-05T12:00:00');
     const formatted = testDate.getFullYear() + '-' +
                       String(testDate.getMonth() + 1).padStart(2, '0') + '-' +
                       String(testDate.getDate()).padStart(2, '0');
