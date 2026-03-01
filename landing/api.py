@@ -1,5 +1,9 @@
 import calendar as _cal
 from datetime import date, datetime, timedelta
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
@@ -7,6 +11,12 @@ from flask_login import current_user, login_required
 from shared import db
 
 from .models import Habit, HabitLog
+
+
+def get_user_today(user):
+    """Get today's date in the user's timezone."""
+    tz = ZoneInfo(user.timezone or 'America/New_York')
+    return datetime.now(tz).date()
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -24,9 +34,9 @@ def toggle_habit(habit_id):
         try:
             target_date = date.fromisoformat(date_str)
         except ValueError:
-            target_date = date.today()
+            target_date = get_user_today(current_user)
     else:
-        target_date = date.today()
+        target_date = get_user_today(current_user)
 
     log = HabitLog.query.filter_by(habit_id=habit_id, completed_date=target_date).first()
 
@@ -50,7 +60,7 @@ def toggle_habit(habit_id):
 @login_required
 def habits_calendar():
     month_str = request.args.get('month')
-    today = date.today()
+    today = get_user_today(current_user)
 
     if month_str:
         try:
@@ -99,7 +109,7 @@ def habits_calendar():
 @api_bp.route('/habits/weekly')
 @login_required
 def habits_weekly():
-    today = date.today()
+    today = get_user_today(current_user)
     # Get the last 7 days (including today)
     start_date = today - timedelta(days=6)
 

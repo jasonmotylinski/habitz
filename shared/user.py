@@ -28,6 +28,9 @@ class User(UserMixin, db.Model):
     # fasting_tracker: default fast duration
     default_fast_hours = db.Column(db.Integer, default=16)
 
+    # user timezone (IANA timezone name)
+    timezone = db.Column(db.String(50), default='America/New_York')
+
     # workout_tracker relationships (string refs resolved lazily at mapper config time)
     programs = db.relationship("Program", backref="user", lazy="dynamic")
     workouts = db.relationship("Workout", backref="user", lazy="dynamic")

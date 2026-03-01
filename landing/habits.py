@@ -1,4 +1,8 @@
-from datetime import date
+from datetime import date, datetime
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 from flask import Blueprint, flash, redirect, render_template, request
 from flask_login import current_user, login_required
@@ -7,6 +11,12 @@ from shared import db
 
 from .completion import check_completion, current_streak, sync_app_linked
 from .models import Habit, HabitLog
+
+
+def get_user_today(user):
+    """Get today's date in the user's timezone."""
+    tz = ZoneInfo(user.timezone or 'America/New_York')
+    return datetime.now(tz).date()
 
 habits_bp = Blueprint('habits', __name__)
 
@@ -39,9 +49,9 @@ def index():
         try:
             view_date = date.fromisoformat(date_str)
         except ValueError:
-            view_date = date.today()
+            view_date = get_user_today(current_user)
     else:
-        view_date = date.today()
+        view_date = get_user_today(current_user)
 
     habits = (
         Habit.query
@@ -51,7 +61,7 @@ def index():
     )
 
     # Sync app-linked habits for today (not the view_date)
-    today = date.today()
+    today = get_user_today(current_user)
     for habit in habits:
         if habit.habit_type != 'manual':
             sync_app_linked(habit, current_user, today)

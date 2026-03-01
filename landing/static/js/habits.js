@@ -11,7 +11,11 @@
   var dateNavDay = dateNav.querySelector('.date-nav-day');
   var dateNavFull = dateNav.querySelector('.date-nav-full');
 
-  var currentDate = new Date().toISOString().split('T')[0];
+  // Get today's date in the browser's local timezone (user's timezone)
+  var todayObj = new Date();
+  var currentDate = todayObj.getFullYear() + '-' +
+                    String(todayObj.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(todayObj.getDate()).padStart(2, '0');
 
   function getURLDate() {
     var params = new URLSearchParams(window.location.search);
@@ -235,7 +239,11 @@
 
     calGrid.innerHTML = '';
 
-    var today = new Date().toISOString().split('T')[0];
+    // Get today's date in local timezone (user's timezone)
+    var todayObj = new Date();
+    var today = todayObj.getFullYear() + '-' +
+                String(todayObj.getMonth() + 1).padStart(2, '0') + '-' +
+                String(todayObj.getDate()).padStart(2, '0');
 
     // Blank cells before the 1st
     var firstWeekday = data.days[0].weekday; // 0=Mon
