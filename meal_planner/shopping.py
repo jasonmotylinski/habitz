@@ -176,7 +176,7 @@ def toggle_item(item_id):
     item.is_checked = not item.is_checked
     db.session.commit()
 
-    return jsonify({'checked': item.is_checked})
+    return jsonify({'success': True, 'checked': item.is_checked})
 
 @shopping_bp.route('/item/<int:item_id>/delete', methods=['POST'])
 @login_required

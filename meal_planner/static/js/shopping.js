@@ -22,13 +22,9 @@ function toggleShoppingItem(checkbox, event) {
     const shoppingItem = checkbox.closest('.shopping-item');
 
     // Optimistic UI update
-    shoppingItem.classList.add('checked');
-
-    // Mark the item as checked visually
-    checkbox.classList.add('checked');
-
-    // Animate the fade
-    shoppingItem.style.opacity = '0.6';
+    const isChecked = checkbox.checked;
+    shoppingItem.classList.toggle('checked', isChecked);
+    shoppingItem.style.opacity = isChecked ? '0.6' : '1';
 
     // AJAX request to toggle on server
     fetch(window.SCRIPT_ROOT + `/shopping/item/${itemId}/toggle`, {
@@ -45,9 +41,9 @@ function toggleShoppingItem(checkbox, event) {
     .then(data => {
         if (!data.success) {
             // Revert on failure
-            shoppingItem.classList.remove('checked');
-            checkbox.classList.remove('checked');
-            shoppingItem.style.opacity = '1';
+            shoppingItem.classList.toggle('checked', !isChecked);
+            checkbox.checked = !isChecked;
+            shoppingItem.style.opacity = !isChecked ? '0.6' : '1';
             new Toast('Failed to update item', 'danger');
         } else {
             // Update progress bar
@@ -62,9 +58,9 @@ function toggleShoppingItem(checkbox, event) {
     .catch(error => {
         console.error('Error:', error);
         // Revert on error
-        shoppingItem.classList.remove('checked');
-        checkbox.classList.remove('checked');
-        shoppingItem.style.opacity = '1';
+        shoppingItem.classList.toggle('checked', !isChecked);
+        checkbox.checked = !isChecked;
+        shoppingItem.style.opacity = !isChecked ? '0.6' : '1';
         new Toast('Error updating item', 'danger');
     });
 }
