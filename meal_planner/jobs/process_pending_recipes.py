@@ -2,8 +2,8 @@
 """
 Cron job: Process pending recipe imports using Claude API
 
-Usage: python jobs/process_pending_recipes.py
-Add to crontab: */5 * * * * cd /path/to/meal-planner && python jobs/process_pending_recipes.py
+Usage: python meal_planner/jobs/process_pending_recipes.py
+Add to crontab: */5 * * * * cd /var/projects/habitz && venv/bin/python meal_planner/jobs/process_pending_recipes.py
 
 This script:
 1. Finds all MealPlan entries with import_status='pending'
@@ -29,14 +29,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Add parent directory to path so we can import app
-project_root = Path(__file__).parent.parent
+# Add the habitz package root to path so meal_planner and shared are importable
+project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 try:
-    from app import create_app
-    from app.models import db, MealPlan, Meal, User
-    from app.recipe_importer import import_recipe_from_url, extract_domain_name
+    from meal_planner import create_app
+    from meal_planner.models import MealPlan, Meal
+    from meal_planner.recipe_importer import import_recipe_from_url, extract_domain_name
+    from shared import db
     from anthropic import Anthropic
 except ImportError as e:
     logger.error(f"Failed to import required modules: {e}")

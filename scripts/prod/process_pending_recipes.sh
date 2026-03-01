@@ -2,4 +2,4 @@
 cd /var/projects/habitz
 source venv/bin/activate
 
-python jobs/process_pending_recipes.py
+python meal_planner/jobs/process_pending_recipes.py

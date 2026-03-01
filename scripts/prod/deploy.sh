@@ -26,19 +26,11 @@ npm test -- --coverage --passWithNoTests 2>/dev/null || true
 # Frontend tests are optional (npm might not be installed), don't fail deployment
 
 echo "==> Running database migrations..."
-# Initialize migrations directory if it doesn't exist
-if [ ! -d "$APP_DIR/migrations" ]; then
-  echo "    Initializing migrations..."
-  FLASK_APP=wsgi:landing_app "$VENV/bin/flask" db init --quiet
-fi
-
-# Run pending migrations
-FLASK_APP=wsgi:landing_app "$VENV/bin/flask" db upgrade
+"$VENV/bin/python" scripts/prod/run_migrations.py
 if [ $? -ne 0 ]; then
   echo "ERROR: Database migration failed. Aborting deployment."
   exit 1
 fi
-echo "✓ Database migrations applied."
 
 echo "==> Tests passed. Restarting gunicorn..."
 sudo systemctl restart habitz
