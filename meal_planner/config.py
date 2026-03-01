@@ -1,9 +1,5 @@
 import os
 from datetime import timedelta
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 _pkg_dir = os.path.abspath(os.path.dirname(__file__))
 _shared_instance = os.path.join(os.path.dirname(_pkg_dir), 'instance')

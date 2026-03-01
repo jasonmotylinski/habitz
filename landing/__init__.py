@@ -4,7 +4,11 @@ from flask_login import LoginManager
 
 def create_app():
     from dotenv import load_dotenv
-    load_dotenv()
+    import os
+    
+    # Only load .env if DATABASE_URL is not already set (e.g., during tests or with explicit env vars)
+    if 'DATABASE_URL' not in os.environ:
+        load_dotenv()
 
     app = Flask(__name__)
 
