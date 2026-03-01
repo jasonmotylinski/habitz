@@ -38,6 +38,7 @@ workout_tracker_app = create_workout_tracker(env)
 # is recognised by every sub-app.  They all use the same SECRET_KEY from .env.
 _here = os.path.dirname(os.path.abspath(__file__))
 _shared_session = dict(
+    SECRET_KEY=os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production'),
     SESSION_COOKIE_NAME='habitz_session',
     SESSION_COOKIE_PATH='/',
     SESSION_COOKIE_SAMESITE='Lax',
