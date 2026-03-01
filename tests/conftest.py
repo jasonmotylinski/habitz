@@ -1,6 +1,13 @@
 """Pytest configuration and fixtures."""
+import os
+import sys
 import pytest
 from datetime import date
+
+# Set DATABASE_URL to in-memory sqlite BEFORE any imports
+os.environ['DATABASE_URL'] = 'sqlite:///:memory:'
+os.environ['FLASK_ENV'] = 'testing'
+
 from landing import create_app
 from shared import db
 from shared.user import User
@@ -13,13 +20,58 @@ def app():
     app = create_app()
     app.config['TESTING'] = True
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['WTF_CSRF_ENABLED'] = False
+    app.config['SQLALCHEMY_ECHO'] = False
 
     with app.app_context():
-        db.create_all()
+        # Import all models to register them with SQLAlchemy
+        try:
+            import landing.models  # noqa: F401
+            print("✓ Imported landing.models")
+        except Exception as e:
+            print(f"✗ Could not import landing.models: {e}")
+        
+        try:
+            import workout_tracker.models  # noqa: F401
+            print("✓ Imported workout_tracker.models")
+        except Exception as e:
+            print(f"✗ Could not import workout_tracker.models: {e}")
+        
+        try:
+            import calorie_tracker.models  # noqa: F401
+            print("✓ Imported calorie_tracker.models")
+        except Exception as e:
+            print(f"✗ Could not import calorie_tracker.models: {e}")
+        
+        try:
+            import fasting_tracker.models  # noqa: F401
+            print("✓ Imported fasting_tracker.models")
+        except Exception as e:
+            print(f"✗ Could not import fasting_tracker.models: {e}")
+        
+        try:
+            import meal_planner.models  # noqa: F401
+            print("✓ Imported meal_planner.models")
+        except Exception as e:
+            print(f"✗ Could not import meal_planner.models: {e}")
+        
+        # Create all tables
+        try:
+            db.create_all()
+            print("✓ Created all database tables")
+        except Exception as e:
+            print(f"✗ Error creating tables: {e}")
+            raise
+        
         yield app
-        db.session.remove()
-        db.drop_all()
+        
+        # Cleanup
+        try:
+            db.session.remove()
+            db.drop_all()
+        except Exception as e:
+            print(f"✗ Error during cleanup: {e}")
 
 
 @pytest.fixture

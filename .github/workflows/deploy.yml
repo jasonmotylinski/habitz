@@ -25,9 +25,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
-      - name: Run backend tests (pytest)
+      - name: Create .env file for tests
         run: |
-          pytest tests/ -v --tb=short
+          echo "FLASK_ENV=testing" > .env
+          echo "SECRET_KEY=test-secret-key" >> .env
+          echo "DATABASE_URL=sqlite:///:memory:" >> .env
+      
+      - name: Run backend tests (pytest)
+        env:
+          DATABASE_URL: sqlite:///:memory:
+          FLASK_ENV: testing
+        run: |
+          pytest tests/ -v --tb=short -s 2>&1 | head -200
       
       - name: Set up Node.js
         uses: actions/setup-node@v4
