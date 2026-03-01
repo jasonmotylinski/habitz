@@ -33,7 +33,7 @@ jobs:
       
       - name: Run backend tests (pytest)
         env:
-          DATABASE_URL: sqlite:///:memory:
+          DATABASE_URL: 'sqlite:///:memory:'
           FLASK_ENV: testing
         run: |
           pytest tests/ -v --tb=short -s 2>&1 | head -200
