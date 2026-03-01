@@ -34,7 +34,15 @@ def history():
 @habits_bp.route('/')
 @login_required
 def index():
-    today = date.today()
+    date_str = request.args.get('date')
+    if date_str:
+        try:
+            view_date = date.fromisoformat(date_str)
+        except ValueError:
+            view_date = date.today()
+    else:
+        view_date = date.today()
+
     habits = (
         Habit.query
         .filter_by(user_id=current_user.id, active=True)
@@ -42,15 +50,16 @@ def index():
         .all()
     )
 
-    # Sync app-linked habits
+    # Sync app-linked habits for today (not the view_date)
+    today = date.today()
     for habit in habits:
         if habit.habit_type != 'manual':
             sync_app_linked(habit, current_user, today)
 
-    # Build display data
+    # Build display data for view_date
     habit_data = []
     for habit in habits:
-        done = check_completion(habit, current_user, today)
+        done = check_completion(habit, current_user, view_date)
         streak = current_streak(habit.id)
         habit_data.append({
             'habit':  habit,
@@ -67,7 +76,7 @@ def index():
         'index.html',
         user=current_user,
         habit_data=habit_data,
-        today=today,
+        today=view_date,
         completed=completed,
         total=total,
         pct=pct,

@@ -19,8 +19,16 @@ def toggle_habit(habit_id):
     if habit.habit_type != 'manual':
         return jsonify({'error': 'Only manual habits can be toggled'}), 400
 
-    today = date.today()
-    log = HabitLog.query.filter_by(habit_id=habit_id, completed_date=today).first()
+    date_str = request.args.get('date')
+    if date_str:
+        try:
+            target_date = date.fromisoformat(date_str)
+        except ValueError:
+            target_date = date.today()
+    else:
+        target_date = date.today()
+
+    log = HabitLog.query.filter_by(habit_id=habit_id, completed_date=target_date).first()
 
     if log:
         db.session.delete(log)
@@ -30,7 +38,7 @@ def toggle_habit(habit_id):
         db.session.add(HabitLog(
             habit_id=habit_id,
             user_id=current_user.id,
-            completed_date=today,
+            completed_date=target_date,
         ))
         db.session.commit()
         done = True

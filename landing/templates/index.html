@@ -64,8 +64,22 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Date Navigation -->
+        <div class="date-nav" id="date-nav">
+            <button class="date-nav-btn" id="date-prev-btn" aria-label="Previous day">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div class="date-nav-label">
+                <span class="date-nav-day">{{ today.strftime('%A') }}</span>
+                <span class="date-nav-full">{{ today.strftime('%b %d, %Y') }}</span>
+            </div>
+            <button class="date-nav-btn" id="date-next-btn" aria-label="Next day">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+        </div>
+
         <div class="daily-header">
-            <div class="today-date">{{ today.strftime('%A, %B %-d') }}</div>
+            <div class="today-date" id="current-date">{{ today.strftime('%A, %B %-d') }}</div>
             {% if total > 0 %}
             <div class="daily-progress"
                  data-completed="{{ completed }}"

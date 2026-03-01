@@ -1,3 +1,53 @@
+// ── Date Navigation ────────────────────────────────────────────────────────────
+(function () {
+  'use strict';
+
+  var dateNav = document.getElementById('date-nav');
+  if (!dateNav) return;
+
+  var prevBtn = document.getElementById('date-prev-btn');
+  var nextBtn = document.getElementById('date-next-btn');
+  var currentDateEl = document.getElementById('current-date');
+  var dateNavDay = dateNav.querySelector('.date-nav-day');
+  var dateNavFull = dateNav.querySelector('.date-nav-full');
+
+  var currentDate = new Date().toISOString().split('T')[0];
+
+  function getURLDate() {
+    var params = new URLSearchParams(window.location.search);
+    return params.get('date') || currentDate;
+  }
+
+  function navigateToDate(newDate) {
+    var url = window.location.pathname;
+    if (newDate !== currentDate) {
+      url += '?date=' + newDate;
+    }
+    window.location.href = url;
+  }
+
+  prevBtn.addEventListener('click', function () {
+    var viewDate = new Date(getURLDate());
+    viewDate.setDate(viewDate.getDate() - 1);
+    navigateToDate(viewDate.toISOString().split('T')[0]);
+  });
+
+  nextBtn.addEventListener('click', function () {
+    var viewDate = new Date(getURLDate());
+    viewDate.setDate(viewDate.getDate() + 1);
+    navigateToDate(viewDate.toISOString().split('T')[0]);
+  });
+
+  // Disable next button if at today
+  function updateNavButtons() {
+    var viewDate = getURLDate();
+    nextBtn.disabled = viewDate === currentDate;
+  }
+
+  updateNavButtons();
+})();
+
+// ── Habit Progress ────────────────────────────────────────────────────────────
 (function () {
   'use strict';
 
@@ -37,18 +87,24 @@
     check.classList.add('pop');
   }
 
+  function getURLDate() {
+    var params = new URLSearchParams(window.location.search);
+    return params.get('date') || new Date().toISOString().split('T')[0];
+  }
+
   function handleToggle(row) {
     if (row.dataset.pending) return;
 
     var habitId = row.dataset.id;
     var wasDone = row.classList.contains('is-done');
+    var dateParam = '?date=' + getURLDate();
 
     // Optimistic update
     row.dataset.pending = '1';
     setRowDone(row, !wasDone);
     updateProgress(wasDone ? -1 : 1);
 
-    fetch('/api/habits/' + habitId + '/toggle', {
+    fetch('/api/habits/' + habitId + '/toggle' + dateParam, {
       method: 'POST',
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
       credentials: 'same-origin',
