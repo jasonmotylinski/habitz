@@ -29,11 +29,11 @@ echo "==> Running database migrations..."
 # Initialize migrations directory if it doesn't exist
 if [ ! -d "$APP_DIR/migrations" ]; then
   echo "    Initializing migrations..."
-  "$VENV/bin/flask" db init --quiet
+  FLASK_APP=wsgi:landing_app "$VENV/bin/flask" db init --quiet
 fi
 
 # Run pending migrations
-"$VENV/bin/flask" db upgrade
+FLASK_APP=wsgi:landing_app "$VENV/bin/flask" db upgrade
 if [ $? -ne 0 ]; then
   echo "ERROR: Database migration failed. Aborting deployment."
   exit 1
