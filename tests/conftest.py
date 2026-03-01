@@ -98,6 +98,7 @@ def user(app):
         user.set_password('password123')
         db.session.add(user)
         db.session.commit()
+        db.session.expunge(user)
         return user
 
 
