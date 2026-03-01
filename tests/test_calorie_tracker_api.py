@@ -170,10 +170,10 @@ class TestDailyNutritionTotals:
             total_carbs = sum(log.carbs_g for log in daily_logs)
             total_fat = sum(log.fat_g for log in daily_logs)
 
-            assert total_calories == 156.0
-            assert total_protein == 0.9
-            assert total_carbs == 42.0
-            assert total_fat == 0.6
+            assert total_calories == pytest.approx(156.0)
+            assert total_protein == pytest.approx(0.9)
+            assert total_carbs == pytest.approx(42.0)
+            assert total_fat == pytest.approx(0.6)
 
     def test_meal_type_grouping(self, app, user, food_item):
         """Test grouping logs by meal type."""

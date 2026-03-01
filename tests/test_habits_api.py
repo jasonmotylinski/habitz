@@ -13,112 +13,97 @@ class TestHabitToggle:
     def test_toggle_habit_creates_log(self, app, user_with_habits):
         """Test toggling a manual habit creates a log entry."""
         user, habits = user_with_habits
-        habit = habits[0]
+        habit_id = habits[0].id
+        user_id = user.id
+        today = get_user_today(user)
 
         with app.test_client() as client:
             with client.session_transaction() as sess:
-                sess['user_id'] = user.id
+                sess['_user_id'] = str(user_id)
+            response = client.post(f'/api/habits/{habit_id}/toggle')
 
-            # Mock auth by manually setting current_user
-            from flask_login import login_user
-            with app.test_request_context():
-                login_user(user)
+        assert response.status_code == 200
 
-                # Toggle habit (should create log)
-                response = client.post(
-                    f'/api/habits/{habit.id}/toggle',
-                    follow_redirects=True
-                )
-
-                # Check log was created
-                log = HabitLog.query.filter_by(
-                    habit_id=habit.id,
-                    user_id=user.id
-                ).first()
-
-                assert log is not None
-                assert log.completed_date == get_user_today(user)
+        with app.app_context():
+            log = HabitLog.query.filter_by(
+                habit_id=habit_id,
+                user_id=user_id
+            ).first()
+            assert log is not None
+            assert log.completed_date == today
 
     def test_toggle_habit_with_date_parameter(self, app, user_with_habits):
         """Test toggling a habit for a specific date."""
         user, habits = user_with_habits
-        habit = habits[0]
+        habit_id = habits[0].id
         past_date = date.today() - timedelta(days=3)
 
         with app.test_client() as client:
-            from flask_login import login_user
-            with app.test_request_context():
-                login_user(user)
+            with client.session_transaction() as sess:
+                sess['_user_id'] = str(user.id)
+            response = client.post(
+                f'/api/habits/{habit_id}/toggle?date={past_date.isoformat()}'
+            )
 
-                response = client.post(
-                    f'/api/habits/{habit.id}/toggle?date={past_date.isoformat()}',
-                    follow_redirects=True
-                )
+        assert response.status_code == 200
 
-                log = HabitLog.query.filter_by(
-                    habit_id=habit.id,
-                    completed_date=past_date
-                ).first()
-
-                assert log is not None
+        with app.app_context():
+            log = HabitLog.query.filter_by(
+                habit_id=habit_id,
+                completed_date=past_date
+            ).first()
+            assert log is not None
 
     def test_toggle_habit_removes_log(self, app, user_with_habits):
         """Test toggling a completed habit removes the log."""
         user, habits = user_with_habits
-        habit = habits[0]
+        habit_id = habits[0].id
+        user_id = user.id
         today = get_user_today(user)
 
-        # Create initial log
-        log = HabitLog(
-            habit_id=habit.id,
-            user_id=user.id,
-            completed_date=today
-        )
-        db.session.add(log)
-        db.session.commit()
+        with app.app_context():
+            db.session.add(HabitLog(
+                habit_id=habit_id,
+                user_id=user_id,
+                completed_date=today
+            ))
+            db.session.commit()
 
         with app.test_client() as client:
-            from flask_login import login_user
-            with app.test_request_context():
-                login_user(user)
+            with client.session_transaction() as sess:
+                sess['_user_id'] = str(user_id)
+            response = client.post(f'/api/habits/{habit_id}/toggle')
 
-                response = client.post(
-                    f'/api/habits/{habit.id}/toggle',
-                    follow_redirects=True
-                )
+        assert response.status_code == 200
 
-                log = HabitLog.query.filter_by(
-                    habit_id=habit.id,
-                    completed_date=today
-                ).first()
-
-                assert log is None
+        with app.app_context():
+            log = HabitLog.query.filter_by(
+                habit_id=habit_id,
+                completed_date=today
+            ).first()
+            assert log is None
 
     def test_toggle_non_manual_habit_fails(self, app, user):
         """Test that non-manual habits cannot be toggled."""
-        habit = Habit(
-            user_id=user.id,
-            name='Workout',
-            habit_type='workout',
-            icon='🏋️',
-            color='#E2844A'
-        )
-        db.session.add(habit)
-        db.session.commit()
+        with app.app_context():
+            habit = Habit(
+                user_id=user.id,
+                name='Workout',
+                habit_type='workout',
+                icon='🏋️',
+                color='#E2844A'
+            )
+            db.session.add(habit)
+            db.session.commit()
+            habit_id = habit.id
 
         with app.test_client() as client:
-            from flask_login import login_user
-            with app.test_request_context():
-                login_user(user)
+            with client.session_transaction() as sess:
+                sess['_user_id'] = str(user.id)
+            response = client.post(f'/api/habits/{habit_id}/toggle')
 
-                response = client.post(
-                    f'/api/habits/{habit.id}/toggle',
-                    follow_redirects=True
-                )
-
-                # Should get error
-                data = response.get_json()
-                assert 'error' in data
+        data = response.get_json()
+        assert 'error' in data
 
 
 class TestHabitsCalendar:
@@ -127,60 +112,57 @@ class TestHabitsCalendar:
     def test_calendar_returns_month_data(self, app, user_with_habits):
         """Test calendar endpoint returns days with completion data."""
         user, habits = user_with_habits
-
-        # Create logs for a few days
+        habit_id = habits[0].id
+        user_id = user.id
         today = get_user_today(user)
-        for i in range(3):
-            log = HabitLog(
-                habit_id=habits[0].id,
-                user_id=user.id,
-                completed_date=today - timedelta(days=i)
-            )
-            db.session.add(log)
-        db.session.commit()
+
+        with app.app_context():
+            for i in range(3):
+                db.session.add(HabitLog(
+                    habit_id=habit_id,
+                    user_id=user_id,
+                    completed_date=today - timedelta(days=i)
+                ))
+            db.session.commit()
 
         with app.test_client() as client:
-            from flask_login import login_user
-            with app.test_request_context():
-                login_user(user)
+            with client.session_transaction() as sess:
+                sess['_user_id'] = str(user_id)
+            month_str = today.strftime('%Y-%m')
+            response = client.get(f'/api/habits/calendar?month={month_str}')
 
-                month_str = today.strftime('%Y-%m')
-                response = client.get(f'/api/habits/calendar?month={month_str}')
-
-                data = response.get_json()
-                assert 'days' in data
-                assert data['year'] == today.year
-                assert data['month'] == today.month
-                assert len(data['days']) > 0
+        data = response.get_json()
+        assert 'days' in data
+        assert data['year'] == today.year
+        assert data['month'] == today.month
+        assert len(data['days']) > 0
 
     def test_calendar_calculates_progress(self, app, user_with_habits):
         """Test that calendar correctly calculates completion progress."""
         user, habits = user_with_habits
+        habit_id = habits[0].id
+        user_id = user.id
         today = get_user_today(user)
 
-        # Complete 1 out of 2 habits
-        log = HabitLog(
-            habit_id=habits[0].id,
-            user_id=user.id,
-            completed_date=today
-        )
-        db.session.add(log)
-        db.session.commit()
+        with app.app_context():
+            db.session.add(HabitLog(
+                habit_id=habit_id,
+                user_id=user_id,
+                completed_date=today
+            ))
+            db.session.commit()
 
         with app.test_client() as client:
-            from flask_login import login_user
-            with app.test_request_context():
-                login_user(user)
+            with client.session_transaction() as sess:
+                sess['_user_id'] = str(user_id)
+            month_str = today.strftime('%Y-%m')
+            response = client.get(f'/api/habits/calendar?month={month_str}')
 
-                month_str = today.strftime('%Y-%m')
-                response = client.get(f'/api/habits/calendar?month={month_str}')
-
-                data = response.get_json()
-                today_data = next(d for d in data['days'] if d['date'] == today.isoformat())
-
-                assert today_data['completed'] == 1
-                assert today_data['total'] == 2
-                assert today_data['progress'] == 0.5
+        data = response.get_json()
+        today_data = next(d for d in data['days'] if d['date'] == today.isoformat())
+        assert today_data['completed'] == 1
+        assert today_data['total'] == 2
+        assert today_data['progress'] == 0.5
 
 
 class TestWeeklyStats:
@@ -191,15 +173,13 @@ class TestWeeklyStats:
         user, habits = user_with_habits
 
         with app.test_client() as client:
-            from flask_login import login_user
-            with app.test_request_context():
-                login_user(user)
+            with client.session_transaction() as sess:
+                sess['_user_id'] = str(user.id)
+            response = client.get('/api/habits/weekly')
 
-                response = client.get('/api/habits/weekly')
-
-                data = response.get_json()
-                assert 'days' in data
-                assert len(data['days']) == 7
+        data = response.get_json()
+        assert 'days' in data
+        assert len(data['days']) == 7
 
     def test_weekly_identifies_today(self, app, user_with_habits):
         """Test that weekly correctly identifies today."""
@@ -207,16 +187,13 @@ class TestWeeklyStats:
         today = get_user_today(user)
 
         with app.test_client() as client:
-            from flask_login import login_user
-            with app.test_request_context():
-                login_user(user)
+            with client.session_transaction() as sess:
+                sess['_user_id'] = str(user.id)
+            response = client.get('/api/habits/weekly')
 
-                response = client.get('/api/habits/weekly')
-
-                data = response.get_json()
-                today_data = next(d for d in data['days'] if d['is_today'])
-
-                assert today_data['date'] == today.isoformat()
+        data = response.get_json()
+        today_data = next(d for d in data['days'] if d['is_today'])
+        assert today_data['date'] == today.isoformat()
 
 
 class TestTimezoneHandling:

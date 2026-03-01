@@ -153,20 +153,21 @@ class TestWorkoutCreation:
             assert we.default_sets == 4
             assert we.default_reps == 8
 
-    def test_workout_exercise_to_dict(self, workout):
+    def test_workout_exercise_to_dict(self, app, workout):
         """Test workout exercise serialization."""
         with app.app_context():
-            we = workout.workout_exercises.first()
+            wo = db.session.get(Workout, workout.id)
+            we = wo.workout_exercises.first()
             data = we.to_dict()
 
             assert data['exercise_name'] == 'Bench Press'
             assert data['default_sets'] == 4
             assert data['default_weight'] == 225.0
 
-    def test_workout_to_dict_with_exercises(self, workout):
+    def test_workout_to_dict_with_exercises(self, app, workout):
         """Test workout serialization with exercises."""
         with app.app_context():
-            wo = workout
+            wo = db.session.get(Workout, workout.id)
             data = wo.to_dict(include_exercises=True)
 
             assert data['name'] == 'Chest Day'
@@ -230,10 +231,10 @@ class TestProgramManagement:
             workouts = prog.workout_order.all()
             assert len(workouts) == 2
 
-    def test_program_to_dict_with_workouts(self, program):
+    def test_program_to_dict_with_workouts(self, app, program):
         """Test program serialization with workouts."""
         with app.app_context():
-            prog = program
+            prog = db.session.get(Program, program.id)
             data = prog.to_dict(include_workouts=True)
 
             assert data['name'] == 'Push/Pull/Legs'

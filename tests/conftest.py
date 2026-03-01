@@ -56,6 +56,10 @@ def app():
         except Exception as e:
             print(f"✗ Could not import meal_planner.models: {e}")
         
+        # Prevent attributes from expiring after commit so fixtures can
+        # return committed objects without triggering DetachedInstanceError
+        db.session.configure(expire_on_commit=False)
+
         # Create all tables
         try:
             db.create_all()
