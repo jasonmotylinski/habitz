@@ -77,11 +77,20 @@ Runs only if: Branch is `main`
    - Doesn't block deployment
    - For validation only
 
-5. **Restart service**
+5. **Run database migrations** (REQUIRED)
+   ```bash
+   flask db init        # Only runs if migrations/ dir doesn't exist
+   flask db upgrade     # Applies pending migrations
+   ```
+   - Initializes migration system if needed
+   - **Blocks deployment if migrations fail**
+   - See `DATABASE_MIGRATIONS.md` for details
+
+6. **Restart service**
    ```bash
    sudo systemctl restart habitz
    ```
-   - Only runs if backend tests pass
+   - Only runs if backend tests and migrations pass
 
 ## Deployment Flow
 
@@ -185,11 +194,23 @@ sudo journalctl -u habitz -n 50 -f
 curl http://localhost:8000/health  # if available
 ```
 
+## Database Migrations
+
+**Important:** The deployment process now includes automatic database migration steps:
+
+1. Check if migrations directory exists
+2. Initialize if needed (`flask db init`)
+3. Apply pending migrations (`flask db upgrade`)
+
+For detailed migration workflow and troubleshooting, see `DATABASE_MIGRATIONS.md`.
+
 ## Future Improvements
 
-- [ ] Add smoke tests post-deployment
+- [ ] Add smoke tests post-deployment (healthcheck endpoint)
 - [ ] Add performance benchmarks
 - [ ] Add security scanning (bandit, safety)
 - [ ] Add code quality checks (pylint, black)
 - [ ] Add automated rollback on service failure
 - [ ] Add Slack notifications for deployments
+- [ ] Test migrations in CI/CD pipeline
+- [ ] Remove `db.create_all()` and use migrations exclusively
