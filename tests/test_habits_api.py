@@ -2,7 +2,7 @@
 import pytest
 from datetime import date, timedelta
 from landing.api import get_user_today
-from landing.models import Habit, HabitLog
+from landing.models import Habit, HabitLog, DailyNote, DailyMood
 from shared import db
 from shared.user import User
 
@@ -270,3 +270,211 @@ class TestTimezoneHandling:
             # should handle both correctly
             assert isinstance(today_ny, date)
             assert isinstance(today_la, date)
+
+
+class TestDailyNotes:
+    """Tests for daily notes functionality."""
+
+    def test_create_daily_note(self, app, user):
+        """Test creating a daily note."""
+        with app.app_context():
+            note = DailyNote(
+                user_id=user.id,
+                date=date.today(),
+                content='Had a great day!'
+            )
+            db.session.add(note)
+            db.session.commit()
+
+            assert note.id is not None
+            assert note.content == 'Had a great day!'
+
+    def test_update_daily_note(self, app, user):
+        """Test updating a daily note."""
+        with app.app_context():
+            note = DailyNote(
+                user_id=user.id,
+                date=date.today(),
+                content='First version'
+            )
+            db.session.add(note)
+            db.session.commit()
+
+            note.content = 'Updated version'
+            db.session.commit()
+
+            updated = DailyNote.query.get(note.id)
+            assert updated.content == 'Updated version'
+
+    def test_daily_note_unique_per_user_date(self, app, user):
+        """Test that each user can only have one note per date."""
+        with app.app_context():
+            note1 = DailyNote(user_id=user.id, date=date.today(), content='Note 1')
+            db.session.add(note1)
+            db.session.commit()
+
+            # Try to add another note for same date
+            note2 = DailyNote(user_id=user.id, date=date.today(), content='Note 2')
+            db.session.add(note2)
+
+            with pytest.raises(Exception):  # Should raise integrity error
+                db.session.commit()
+
+    def test_daily_note_to_dict(self, app, user):
+        """Test daily note serialization."""
+        with app.app_context():
+            note = DailyNote(
+                user_id=user.id,
+                date=date.today(),
+                content='Test note'
+            )
+            db.session.add(note)
+            db.session.commit()
+
+            data = note.to_dict()
+            assert data['date'] == date.today().isoformat()
+            assert data['content'] == 'Test note'
+            assert 'created_at' in data
+
+    def test_notes_per_user(self, app, user):
+        """Test querying notes per user."""
+        with app.app_context():
+            for i in range(5):
+                note = DailyNote(
+                    user_id=user.id,
+                    date=date.today() - timedelta(days=i),
+                    content=f'Note {i}'
+                )
+                db.session.add(note)
+            db.session.commit()
+
+            notes = DailyNote.query.filter_by(user_id=user.id).all()
+            assert len(notes) == 5
+
+
+class TestDailyMood:
+    """Tests for daily mood tracking."""
+
+    def test_create_daily_mood(self, app, user):
+        """Test creating a daily mood entry."""
+        with app.app_context():
+            mood = DailyMood(
+                user_id=user.id,
+                date=date.today(),
+                mood=5
+            )
+            db.session.add(mood)
+            db.session.commit()
+
+            assert mood.id is not None
+            assert mood.mood == 5
+
+    def test_mood_range_1_to_5(self, app, user):
+        """Test that mood values are between 1 and 5."""
+        with app.app_context():
+            for mood_val in range(1, 6):
+                mood = DailyMood(
+                    user_id=user.id,
+                    date=date.today() - timedelta(days=mood_val),
+                    mood=mood_val
+                )
+                db.session.add(mood)
+            db.session.commit()
+
+            moods = DailyMood.query.filter_by(user_id=user.id).all()
+            assert len(moods) == 5
+            assert all(1 <= m.mood <= 5 for m in moods)
+
+    def test_mood_emoji_mapping(self, app, user):
+        """Test mood to emoji mapping."""
+        with app.app_context():
+            mapping = {
+                1: '😢',
+                2: '😕',
+                3: '😐',
+                4: '😊',
+                5: '😄',
+            }
+
+            for mood_val, expected_emoji in mapping.items():
+                emoji = DailyMood.get_emoji_for_mood(mood_val)
+                assert emoji == expected_emoji
+
+    def test_mood_with_notes(self, app, user):
+        """Test mood with additional notes."""
+        with app.app_context():
+            mood = DailyMood(
+                user_id=user.id,
+                date=date.today(),
+                mood=4,
+                notes='Feeling happy because...'
+            )
+            db.session.add(mood)
+            db.session.commit()
+
+            assert mood.notes == 'Feeling happy because...'
+
+    def test_mood_with_custom_emoji(self, app, user):
+        """Test mood with custom emoji override."""
+        with app.app_context():
+            mood = DailyMood(
+                user_id=user.id,
+                date=date.today(),
+                mood=4,
+                emoji='🎉'
+            )
+            db.session.add(mood)
+            db.session.commit()
+
+            assert mood.emoji == '🎉'
+
+    def test_mood_unique_per_user_date(self, app, user):
+        """Test that each user can only have one mood per date."""
+        with app.app_context():
+            mood1 = DailyMood(user_id=user.id, date=date.today(), mood=4)
+            db.session.add(mood1)
+            db.session.commit()
+
+            mood2 = DailyMood(user_id=user.id, date=date.today(), mood=5)
+            db.session.add(mood2)
+
+            with pytest.raises(Exception):  # Should raise integrity error
+                db.session.commit()
+
+    def test_mood_to_dict(self, app, user):
+        """Test mood serialization."""
+        with app.app_context():
+            mood = DailyMood(
+                user_id=user.id,
+                date=date.today(),
+                mood=4,
+                notes='Feeling great'
+            )
+            db.session.add(mood)
+            db.session.commit()
+
+            data = mood.to_dict()
+            assert data['date'] == date.today().isoformat()
+            assert data['mood'] == 4
+            assert data['emoji'] == '😊'
+            assert data['notes'] == 'Feeling great'
+
+    def test_mood_progression(self, app, user):
+        """Test tracking mood over time."""
+        with app.app_context():
+            moods = [2, 3, 4, 5, 4]  # Improving mood progression
+            for i, mood_val in enumerate(moods):
+                mood = DailyMood(
+                    user_id=user.id,
+                    date=date.today() - timedelta(days=len(moods) - i - 1),
+                    mood=mood_val
+                )
+                db.session.add(mood)
+            db.session.commit()
+
+            history = DailyMood.query.filter_by(
+                user_id=user.id
+            ).order_by(DailyMood.date).all()
+
+            actual_moods = [m.mood for m in history]
+            assert actual_moods == moods

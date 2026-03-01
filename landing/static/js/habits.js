@@ -1,3 +1,124 @@
+// ── Daily Mood & Notes ────────────────────────────────────────────────────────
+(function () {
+  'use strict';
+
+  var moodSelector = document.getElementById('mood-selector');
+  var moodNotesInput = document.getElementById('mood-notes');
+  var dailyNotesInput = document.getElementById('daily-notes');
+
+  if (!moodSelector || !dailyNotesInput) return;
+
+  var currentMood = null;
+  var moodLoadTimer = null;
+  var notesLoadTimer = null;
+
+  // Load mood and notes for current date
+  function loadMoodAndNotes() {
+    var params = new URLSearchParams(window.location.search);
+    var viewDate = params.get('date') || new Date().toISOString().split('T')[0];
+
+    // Load mood
+    fetch(window.location.pathname.split('/')[1] + '/api/daily/mood?date=' + viewDate)
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.mood) {
+          currentMood = data.mood;
+          document.querySelector('[data-mood="' + data.mood + '"]').classList.add('active');
+          if (data.notes) moodNotesInput.value = data.notes;
+        }
+      })
+      .catch(function (e) { console.error('Failed to load mood:', e); });
+
+    // Load notes
+    fetch(window.location.pathname.split('/')[1] + '/api/daily/note?date=' + viewDate)
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.content) dailyNotesInput.value = data.content;
+      })
+      .catch(function (e) { console.error('Failed to load notes:', e); });
+  }
+
+  // Save mood
+  function saveMood(mood) {
+    var params = new URLSearchParams(window.location.search);
+    var viewDate = params.get('date') || new Date().toISOString().split('T')[0];
+
+    var payload = {
+      date: viewDate,
+      mood: mood,
+      notes: moodNotesInput.value.trim()
+    };
+
+    fetch(window.location.pathname.split('/')[1] + '/api/daily/mood', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject('Failed to save mood'); })
+      .then(function (data) {
+        currentMood = mood;
+        console.log('Mood saved:', mood);
+      })
+      .catch(function (e) { console.error('Failed to save mood:', e); });
+  }
+
+  // Save notes
+  function saveNotes(content) {
+    var params = new URLSearchParams(window.location.search);
+    var viewDate = params.get('date') || new Date().toISOString().split('T')[0];
+
+    var payload = {
+      date: viewDate,
+      content: content.trim()
+    };
+
+    fetch(window.location.pathname.split('/')[1] + '/api/daily/note', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject('Failed to save notes'); })
+      .catch(function (e) { console.error('Failed to save notes:', e); });
+  }
+
+  // Mood button clicks
+  document.querySelectorAll('.mood-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var mood = parseInt(btn.dataset.mood);
+      
+      // Update UI
+      document.querySelectorAll('.mood-btn').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+
+      // Save
+      saveMood(mood);
+    });
+  });
+
+  // Notes input with debounce
+  dailyNotesInput.addEventListener('input', function () {
+    clearTimeout(notesLoadTimer);
+    notesLoadTimer = setTimeout(function () {
+      saveNotes(dailyNotesInput.value);
+    }, 1000);
+  });
+
+  // Mood notes input with debounce
+  moodNotesInput.addEventListener('input', function () {
+    clearTimeout(moodLoadTimer);
+    moodLoadTimer = setTimeout(function () {
+      if (currentMood) {
+        saveMood(currentMood);
+      }
+    }, 1000);
+  });
+
+  // Load on init
+  loadMoodAndNotes();
+})();
+
 // ── Date Navigation ────────────────────────────────────────────────────────────
 (function () {
   'use strict';

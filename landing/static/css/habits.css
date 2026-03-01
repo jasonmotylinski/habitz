@@ -189,6 +189,110 @@ body {
     margin-bottom: 0.875rem;
 }
 
+/* ── Daily Mood & Notes ──────────────────────────────────── */
+
+.daily-summary {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: var(--surface-2);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+}
+
+.mood-section {
+    margin-bottom: 1.5rem;
+}
+
+.section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+}
+
+.mood-selector {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.mood-btn {
+    width: 48px;
+    height: 48px;
+    border: 2px solid var(--border);
+    background: transparent;
+    border-radius: var(--radius-sm);
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.mood-btn:hover {
+    border-color: var(--accent);
+    transform: scale(1.05);
+}
+
+.mood-btn.active {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    transform: scale(1.1);
+}
+
+.mood-notes {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    resize: none;
+    height: 2.5rem;
+}
+
+.mood-notes::placeholder {
+    color: var(--text-dim);
+}
+
+.mood-notes:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-dim);
+}
+
+.notes-section {}
+
+.daily-notes {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    resize: none;
+    height: 120px;
+    line-height: 1.5;
+}
+
+.daily-notes::placeholder {
+    color: var(--text-dim);
+}
+
+.daily-notes:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-dim);
+}
+
 .progress-summary {
     display: flex;
     justify-content: space-between;

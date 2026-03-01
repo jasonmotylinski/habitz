@@ -95,6 +95,28 @@
             {% endif %}
         </div>
 
+        <!-- Daily Mood & Notes Section -->
+        <div class="daily-summary">
+            <!-- Mood Selector -->
+            <div class="mood-section">
+                <h3 class="section-title">How are you feeling?</h3>
+                <div class="mood-selector" id="mood-selector">
+                    <button class="mood-btn" data-mood="1" title="Terrible">😢</button>
+                    <button class="mood-btn" data-mood="2" title="Bad">😕</button>
+                    <button class="mood-btn" data-mood="3" title="Okay">😐</button>
+                    <button class="mood-btn" data-mood="4" title="Good">😊</button>
+                    <button class="mood-btn" data-mood="5" title="Great">😄</button>
+                </div>
+                <input type="text" id="mood-notes" class="mood-notes" placeholder="(optional) Why do you feel this way?">
+            </div>
+
+            <!-- Daily Notes -->
+            <div class="notes-section">
+                <h3 class="section-title">Daily Notes</h3>
+                <textarea id="daily-notes" class="daily-notes" placeholder="Write anything on your mind today..."></textarea>
+            </div>
+        </div>
+
         {% if habit_data %}
         <ul class="habit-list" role="list">
             {% for item in habit_data %}

@@ -10,7 +10,7 @@ from flask_login import current_user, login_required
 
 from shared import db
 
-from .models import Habit, HabitLog
+from .models import Habit, HabitLog, DailyNote, DailyMood
 
 
 def get_user_today(user):
@@ -143,3 +143,186 @@ def habits_weekly():
         })
 
     return jsonify({'days': days})
+
+
+@api_bp.route('/daily/note', methods=['GET'])
+@login_required
+def get_daily_note():
+    """Get daily note for a specific date"""
+    date_str = request.args.get('date')
+    if date_str:
+        try:
+            target_date = date.fromisoformat(date_str)
+        except ValueError:
+            return jsonify({'error': 'Invalid date format'}), 400
+    else:
+        target_date = get_user_today(current_user)
+
+    note = DailyNote.query.filter_by(
+        user_id=current_user.id,
+        date=target_date
+    ).first()
+
+    return jsonify(note.to_dict() if note else {'date': target_date.isoformat(), 'content': None})
+
+
+@api_bp.route('/daily/note', methods=['POST'])
+@login_required
+def create_or_update_note():
+    """Create or update daily note"""
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    date_str = data.get('date')
+    if date_str:
+        try:
+            target_date = date.fromisoformat(date_str)
+        except ValueError:
+            return jsonify({'error': 'Invalid date format'}), 400
+    else:
+        target_date = get_user_today(current_user)
+
+    content = data.get('content', '').strip()
+
+    note = DailyNote.query.filter_by(
+        user_id=current_user.id,
+        date=target_date
+    ).first()
+
+    if note:
+        note.content = content
+        db.session.commit()
+    else:
+        note = DailyNote(
+            user_id=current_user.id,
+            date=target_date,
+            content=content
+        )
+        db.session.add(note)
+        db.session.commit()
+
+    return jsonify(note.to_dict()), 201 if not note else 200
+
+
+@api_bp.route('/daily/mood', methods=['GET'])
+@login_required
+def get_daily_mood():
+    """Get daily mood for a specific date"""
+    date_str = request.args.get('date')
+    if date_str:
+        try:
+            target_date = date.fromisoformat(date_str)
+        except ValueError:
+            return jsonify({'error': 'Invalid date format'}), 400
+    else:
+        target_date = get_user_today(current_user)
+
+    mood = DailyMood.query.filter_by(
+        user_id=current_user.id,
+        date=target_date
+    ).first()
+
+    return jsonify(mood.to_dict() if mood else {'date': target_date.isoformat(), 'mood': None})
+
+
+@api_bp.route('/daily/mood', methods=['POST'])
+@login_required
+def create_or_update_mood():
+    """Create or update daily mood"""
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    date_str = data.get('date')
+    if date_str:
+        try:
+            target_date = date.fromisoformat(date_str)
+        except ValueError:
+            return jsonify({'error': 'Invalid date format'}), 400
+    else:
+        target_date = get_user_today(current_user)
+
+    mood_value = data.get('mood')
+    if mood_value is None:
+        return jsonify({'error': 'Mood value required'}), 400
+
+    try:
+        mood_value = int(mood_value)
+        if mood_value < 1 or mood_value > 5:
+            return jsonify({'error': 'Mood must be between 1 and 5'}), 400
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Mood must be an integer'}), 400
+
+    notes = data.get('notes', '').strip()
+    emoji = data.get('emoji')
+
+    mood = DailyMood.query.filter_by(
+        user_id=current_user.id,
+        date=target_date
+    ).first()
+
+    if mood:
+        mood.mood = mood_value
+        mood.emoji = emoji
+        mood.notes = notes
+        db.session.commit()
+    else:
+        mood = DailyMood(
+            user_id=current_user.id,
+            date=target_date,
+            mood=mood_value,
+            emoji=emoji,
+            notes=notes
+        )
+        db.session.add(mood)
+        db.session.commit()
+
+    return jsonify(mood.to_dict()), 201
+
+
+@api_bp.route('/daily/summary')
+@login_required
+def get_daily_summary():
+    """Get daily summary (habits, note, mood) for a specific date"""
+    date_str = request.args.get('date')
+    if date_str:
+        try:
+            target_date = date.fromisoformat(date_str)
+        except ValueError:
+            return jsonify({'error': 'Invalid date format'}), 400
+    else:
+        target_date = get_user_today(current_user)
+
+    # Get habits for the day
+    logs = HabitLog.query.filter_by(
+        user_id=current_user.id,
+        completed_date=target_date
+    ).all()
+
+    habit_ids = set(log.habit_id for log in logs)
+    total_habits = Habit.query.filter_by(user_id=current_user.id, active=True).count()
+    completed_habits = len(habit_ids)
+
+    # Get note
+    note = DailyNote.query.filter_by(
+        user_id=current_user.id,
+        date=target_date
+    ).first()
+
+    # Get mood
+    mood = DailyMood.query.filter_by(
+        user_id=current_user.id,
+        date=target_date
+    ).first()
+
+    return jsonify({
+        'date': target_date.isoformat(),
+        'habits': {
+            'completed': completed_habits,
+            'total': total_habits,
+            'progress': round(completed_habits / total_habits, 2) if total_habits > 0 else 0,
+        },
+        'note': note.to_dict() if note else None,
+        'mood': mood.to_dict() if mood else None,
+    })
