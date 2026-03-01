@@ -96,3 +96,15 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "integration: mark test as an integration test"
     )
+    config.addinivalue_line(
+        "markers", "calorie: mark test as calorie tracker test"
+    )
+    config.addinivalue_line(
+        "markers", "fasting: mark test as fasting tracker test"
+    )
+    config.addinivalue_line(
+        "markers", "workout: mark test as workout tracker test"
+    )
+    config.addinivalue_line(
+        "markers", "meal: mark test as meal planner test"
+    )
