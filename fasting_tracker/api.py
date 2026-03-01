@@ -143,7 +143,10 @@ def weekly_stats():
         except ValueError:
             pass
 
-    days = get_daily_progress(current_user.id, current_user.default_fast_hours, date)
+    days = get_daily_progress(
+        current_user.id, current_user.default_fast_hours, date,
+        user_timezone=current_user.timezone or 'UTC',
+    )
     return jsonify({'days': days})
 
 
@@ -162,7 +165,10 @@ def monthly_stats():
         now = datetime.utcnow()
         year, month = now.year, now.month
 
-    days = get_monthly_progress(current_user.id, current_user.default_fast_hours, year, month)
+    days = get_monthly_progress(
+        current_user.id, current_user.default_fast_hours, year, month,
+        user_timezone=current_user.timezone or 'UTC',
+    )
     return jsonify({'year': year, 'month': month, 'days': days})
 
 
