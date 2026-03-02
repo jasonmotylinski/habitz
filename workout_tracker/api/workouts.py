@@ -122,8 +122,7 @@ def update_workout_exercise(workout_id, we_id):
     we = WorkoutExercise.query.filter_by(id=we_id, workout_id=workout.id).first_or_404()
     data = request.get_json()
 
-    if "exercise_name" in data:
-        we.exercise.name = data["exercise_name"]
+    # Only update workout exercise fields, not the shared exercise record
     if "default_sets" in data:
         we.default_sets = data["default_sets"]
     if "default_reps" in data:

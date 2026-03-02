@@ -91,11 +91,7 @@
 <!-- Edit Exercise Modal -->
 <div id="edit-exercise-modal" class="modal-overlay hidden">
     <div class="modal">
-        <h2>Edit Exercise</h2>
-        <div class="form-group">
-            <label>Exercise Name</label>
-            <input type="text" id="edit-ex-name" class="form-control">
-        </div>
+        <h2 id="edit-ex-display"></h2>
         <div id="edit-ex-strength-fields">
             <div class="form-group">
                 <label>Unit of measure</label>
@@ -277,7 +273,7 @@ function showEditExercise(weId, type, sets, reps, weight, duration, unit, name) 
     document.getElementById('edit-ex-strength-fields').classList.toggle('hidden', isCardio);
     document.getElementById('edit-ex-cardio-fields').classList.toggle('hidden', !isCardio);
 
-    document.getElementById('edit-ex-name').value = name || '';
+    document.getElementById('edit-ex-display').textContent = name || 'Exercise';
 
     if (isCardio) {
         document.getElementById('edit-ex-duration').value = duration || 30;
@@ -300,11 +296,6 @@ function closeEditExerciseModal() {
 
 async function saveExerciseEdit() {
     const payload = {};
-    const newName = document.getElementById('edit-ex-name').value.trim();
-
-    if (newName) {
-        payload.exercise_name = newName;
-    }
 
     if (!document.getElementById('edit-ex-strength-fields').classList.contains('hidden')) {
         payload.default_sets = parseInt(document.getElementById('edit-ex-sets').value);
