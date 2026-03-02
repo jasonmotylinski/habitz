@@ -222,45 +222,53 @@ function closeExerciseModal() {
 }
 
 async function addExercise() {
-    let exerciseId = selectedExerciseId;
-    const newName = document.getElementById('new-exercise-name').value.trim();
-    const exType = document.getElementById('new-exercise-type').value;
+    const addBtn = document.querySelector('#exercise-modal .btn-primary');
+    if (addBtn.disabled) return;
+    addBtn.disabled = true;
 
-    if (!exerciseId && !newName) {
-        showToast('Select or create an exercise', 'error');
-        return;
+    try {
+        let exerciseId = selectedExerciseId;
+        const newName = document.getElementById('new-exercise-name').value.trim();
+        const exType = document.getElementById('new-exercise-type').value;
+
+        if (!exerciseId && !newName) {
+            showToast('Select or create an exercise', 'error');
+            return;
+        }
+
+        if (newName) {
+            const unit = exType === 'strength' ? document.getElementById('ex-unit').value : 'reps';
+            const e = await api.post('/api/exercises', { name: newName, type: exType, unit });
+            exerciseId = e.id;
+        }
+
+        const payload = { exercise_id: exerciseId };
+        if (exType === 'cardio') {
+            payload.default_sets = 1;
+            payload.default_reps = 1;
+            payload.default_duration_minutes = parseInt(document.getElementById('ex-duration').value) || 30;
+        } else {
+            payload.default_sets = parseInt(document.getElementById('ex-sets').value) || 5;
+            payload.default_reps = parseInt(document.getElementById('ex-reps').value) || 5;
+            payload.unit = document.getElementById('ex-unit').value;
+            const w = document.getElementById('ex-weight').value;
+            if (w) payload.default_weight = parseFloat(w);
+        }
+
+        const body = { ...payload };
+        if (newName) {
+            body.exercise_name = newName;
+            body.exercise_type = exType;
+            body.unit = payload.unit || 'reps';
+        }
+
+        await api.post(`/api/workouts/${workoutId}/exercises`, payload);
+        closeExerciseModal();
+        showToast('Exercise added', 'success');
+        loadWorkout();
+    } finally {
+        addBtn.disabled = false;
     }
-
-    if (newName) {
-        const unit = exType === 'strength' ? document.getElementById('ex-unit').value : 'reps';
-        const e = await api.post('/api/exercises', { name: newName, type: exType, unit });
-        exerciseId = e.id;
-    }
-
-    const payload = { exercise_id: exerciseId };
-    if (exType === 'cardio') {
-        payload.default_sets = 1;
-        payload.default_reps = 1;
-        payload.default_duration_minutes = parseInt(document.getElementById('ex-duration').value) || 30;
-    } else {
-        payload.default_sets = parseInt(document.getElementById('ex-sets').value) || 5;
-        payload.default_reps = parseInt(document.getElementById('ex-reps').value) || 5;
-        payload.unit = document.getElementById('ex-unit').value;
-        const w = document.getElementById('ex-weight').value;
-        if (w) payload.default_weight = parseFloat(w);
-    }
-
-    const body = { ...payload };
-    if (newName) {
-        body.exercise_name = newName;
-        body.exercise_type = exType;
-        body.unit = payload.unit || 'reps';
-    }
-
-    await api.post(`/api/workouts/${workoutId}/exercises`, payload);
-    closeExerciseModal();
-    showToast('Exercise added', 'success');
-    loadWorkout();
 }
 
 function showEditExercise(weId, type, sets, reps, weight, duration, unit, name) {

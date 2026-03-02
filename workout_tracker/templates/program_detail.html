@@ -240,26 +240,34 @@ function closeWorkoutModal() {
 }
 
 async function addWorkout() {
-    let workoutId = selectedWorkoutId;
-    const newName = document.getElementById('new-workout-name').value.trim();
+    const addBtn = document.querySelector('#workout-modal .btn-primary');
+    if (addBtn.disabled) return;
+    addBtn.disabled = true;
 
-    if (!workoutId && !newName) {
-        showToast('Select or create a workout', 'error');
-        return;
+    try {
+        let workoutId = selectedWorkoutId;
+        const newName = document.getElementById('new-workout-name').value.trim();
+
+        if (!workoutId && !newName) {
+            showToast('Select or create a workout', 'error');
+            return;
+        }
+
+        if (newName) {
+            const w = await api.post('/api/workouts', { name: newName });
+            workoutId = w.id;
+        }
+
+        const currentIds = (program.workouts || []).map(w => w.id);
+        currentIds.push(workoutId);
+        await api.put(`/api/programs/${programId}/order`, { workout_ids: currentIds });
+
+        closeWorkoutModal();
+        showToast('Workout added', 'success');
+        loadProgram();
+    } finally {
+        addBtn.disabled = false;
     }
-
-    if (newName) {
-        const w = await api.post('/api/workouts', { name: newName });
-        workoutId = w.id;
-    }
-
-    const currentIds = (program.workouts || []).map(w => w.id);
-    currentIds.push(workoutId);
-    await api.put(`/api/programs/${programId}/order`, { workout_ids: currentIds });
-
-    closeWorkoutModal();
-    showToast('Workout added', 'success');
-    loadProgram();
 }
 
 document.getElementById('workout-modal').addEventListener('click', (e) => {

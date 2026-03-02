@@ -222,7 +222,8 @@
 
     var habitId = row.dataset.id;
     var wasDone = row.classList.contains('is-done');
-    var dateParam = '?date=' + getURLDate();
+    var urlDate = new URLSearchParams(window.location.search).get('date');
+    var dateParam = urlDate ? '?date=' + urlDate : '';
 
     // Optimistic update
     row.dataset.pending = '1';
