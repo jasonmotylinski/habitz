@@ -1,7 +1,17 @@
-from datetime import date
+from datetime import date, datetime
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
+
+
+def get_user_today(user):
+    tz = ZoneInfo(user.timezone or 'America/New_York')
+    return datetime.now(tz).date()
 
 from .models import FoodItem, FoodLog, db
 from .services.nutrition import get_or_create_food_item, search_foods
@@ -32,7 +42,7 @@ def food_detail(food_item_id):
 @api_bp.route('/log', methods=['GET'])
 @login_required
 def get_logs():
-    date_str = request.args.get('date', date.today().isoformat())
+    date_str = request.args.get('date', get_user_today(current_user).isoformat())
     try:
         target_date = date.fromisoformat(date_str)
     except ValueError:
@@ -75,7 +85,7 @@ def create_log():
     if meal_type not in ('breakfast', 'lunch', 'dinner', 'snack'):
         return jsonify({'error': 'Invalid meal type'}), 400
 
-    log_date = data.get('date', date.today().isoformat())
+    log_date = data.get('date', get_user_today(current_user).isoformat())
     try:
         log_date = date.fromisoformat(log_date)
     except ValueError:
@@ -140,7 +150,7 @@ def delete_log(log_id):
 @api_bp.route('/stats/daily')
 @login_required
 def daily_stats():
-    date_str = request.args.get('date', date.today().isoformat())
+    date_str = request.args.get('date', get_user_today(current_user).isoformat())
     try:
         target_date = date.fromisoformat(date_str)
     except ValueError:
@@ -157,7 +167,7 @@ def daily_stats():
 @api_bp.route('/stats/weekly')
 @login_required
 def weekly_stats():
-    date_str = request.args.get('date', date.today().isoformat())
+    date_str = request.args.get('date', get_user_today(current_user).isoformat())
     try:
         end_date = date.fromisoformat(date_str)
     except ValueError:
@@ -207,7 +217,7 @@ def create_quick_log():
     if meal_type not in ('breakfast', 'lunch', 'dinner', 'snack'):
         return jsonify({'error': 'Invalid meal type'}), 400
 
-    log_date = data.get('date', date.today().isoformat())
+    log_date = data.get('date', get_user_today(current_user).isoformat())
     try:
         log_date = date.fromisoformat(log_date)
     except ValueError:

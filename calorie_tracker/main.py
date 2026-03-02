@@ -1,4 +1,9 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 from flask import Blueprint, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
@@ -7,6 +12,11 @@ from .forms import GoalsForm
 from .models import FoodLog, db
 
 main_bp = Blueprint('main', __name__)
+
+
+def get_user_today(user):
+    tz = ZoneInfo(user.timezone or 'America/New_York')
+    return datetime.now(tz).date()
 
 
 @main_bp.route('/')
@@ -24,9 +34,9 @@ def dashboard():
         try:
             view_date = date.fromisoformat(date_str)
         except ValueError:
-            view_date = date.today()
+            view_date = get_user_today(current_user)
     else:
-        view_date = date.today()
+        view_date = get_user_today(current_user)
 
     prev_date = view_date - timedelta(days=1)
     next_date = view_date + timedelta(days=1)
