@@ -282,7 +282,7 @@ def exercise_progress(exercise_id):
     if exercise.type == "strength":
         # Find PR (personal record) - highest weight
         max_weight = max(
-            (s["weight"] for s in set_logs if s["weight"] and s["completed"]),
+            (s.weight for s in set_logs if s.weight and s.completed),
             default=None,
         )
         if max_weight:
