@@ -16,11 +16,11 @@
 </div>
 
 <!-- Edit modal -->
-<div id="edit-modal" class="modal hidden">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Edit Exercise</h2>
-            <button class="close-btn" onclick="closeEditModal()">×</button>
+<div id="edit-modal" class="modal-overlay modal-centered hidden" onclick="if(event.target===this)closeEditModal()">
+    <div class="modal">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <h2 style="margin:0;">Edit Exercise</h2>
+            <button onclick="closeEditModal()" style="background:none;border:none;font-size:1.4rem;line-height:1;cursor:pointer;color:var(--text-muted);padding:4px 8px;">×</button>
         </div>
         <div id="edit-modal-body"></div>
     </div>
