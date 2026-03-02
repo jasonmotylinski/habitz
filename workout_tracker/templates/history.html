@@ -194,27 +194,21 @@ function renderHistoryList() {
                 </div>`;
             }
 
-            const completedSets = ex.sets.filter(s => s.completed);
-            if (!completedSets.length) {
-                const firstSet = ex.sets[0];
-                return `<div class="history-exercise" onclick="event.stopPropagation(); openEditModal(${log.id}, ${firstSet.id}, '${escapedName}', 'strength', null, ${firstSet.weight}, '${firstSet.planned_reps}')" style="cursor: pointer;">
-                    <span class="name" style="flex: 1;">${ex.name}</span>
-                    <span class="skipped">Skipped</span>
-                    <span class="history-exercise-actions">
-                        <button class="history-exercise-progress" onclick="event.stopPropagation(); window.location.href=SCRIPT_ROOT+'/exercises/${exerciseId}/progress'" title="View progress">↗</button>
-                        <button class="history-exercise-delete" onclick="event.stopPropagation(); deleteExercise(${log.id}, ${firstSet.id})" title="Delete exercise">×</button>
-                    </span>
-                </div>`;
-            }
-
-            const weight = completedSets[0].weight;
-            const repsStr = completedSets.map(s => s.actual_reps).join('/');
-            return `<div class="history-exercise" onclick="event.stopPropagation(); openEditModal(${log.id}, ${completedSets[0].id}, '${escapedName}', 'strength', null, ${weight}, '${completedSets.map(s => s.actual_reps).join(',')}')" style="cursor: pointer;">
+            // Sort sets by set_number to match the circle order from the active workout
+            const sortedSets = [...ex.sets].sort((a, b) => a.set_number - b.set_number);
+            const completedSets = sortedSets.filter(s => s.completed);
+            const anySetId = (completedSets[0] || sortedSets[0]).id;
+            const weight = (sortedSets.find(s => s.weight != null) || {}).weight || null;
+            // One reps value per set: actual if completed, planned if not — mirrors the circles
+            const allReps = sortedSets.map(s => s.completed ? s.actual_reps : s.planned_reps).join(',');
+            const isSkipped = completedSets.length === 0;
+            const displayReps = isSkipped ? 'Skipped' : completedSets.map(s => s.actual_reps).join('/');
+            return `<div class="history-exercise" onclick="event.stopPropagation(); openEditModal(${log.id}, ${anySetId}, '${escapedName}', 'strength', null, ${weight}, '${allReps}')" style="cursor: pointer;">
                 <span class="name" style="flex: 1;">${ex.name}</span>
-                <span class="result">${repsStr} ${weight ? weight + 'lb' : ''}</span>
+                <span class="${isSkipped ? 'skipped' : 'result'}">${displayReps}${!isSkipped && weight ? ' ' + weight + 'lb' : ''}</span>
                 <span class="history-exercise-actions">
                     <button class="history-exercise-progress" onclick="event.stopPropagation(); window.location.href=SCRIPT_ROOT+'/exercises/${exerciseId}/progress'" title="View progress">↗</button>
-                    <button class="history-exercise-delete" onclick="event.stopPropagation(); deleteExercise(${log.id}, ${completedSets[0].id})" title="Delete exercise">×</button>
+                    <button class="history-exercise-delete" onclick="event.stopPropagation(); deleteExercise(${log.id}, ${anySetId})" title="Delete exercise">×</button>
                 </span>
             </div>`;
         }).join('');
