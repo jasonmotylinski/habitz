@@ -184,13 +184,11 @@ function renderHistoryList() {
             if (ex.type === 'cardio') {
                 const s = ex.sets[0];
                 const result = s.completed ? `${s.duration_minutes} min` : 'Skipped';
-                const rowClick = isExpanded
-                    ? `onclick="event.stopPropagation(); openEditModal(${log.id}, ${s.id}, '${escapedName}', 'cardio', ${s.duration_minutes}, null)"`
-                    : `onclick="event.stopPropagation(); window.location.href=SCRIPT_ROOT+'/exercises/${exerciseId}/progress'"`;
-                return `<div class="history-exercise" ${rowClick} style="cursor: pointer;">
+                return `<div class="history-exercise" onclick="event.stopPropagation(); openEditModal(${log.id}, ${s.id}, '${escapedName}', 'cardio', ${s.duration_minutes}, null)" style="cursor: pointer;">
                     <span class="name" style="flex: 1;">${ex.name}</span>
                     <span class="${s.completed ? 'result' : 'skipped'}">${result}</span>
                     <span class="history-exercise-actions">
+                        <button class="history-exercise-progress" onclick="event.stopPropagation(); window.location.href=SCRIPT_ROOT+'/exercises/${exerciseId}/progress'" title="View progress">↗</button>
                         <button class="history-exercise-delete" onclick="event.stopPropagation(); deleteExercise(${log.id}, ${s.id})" title="Delete exercise">×</button>
                     </span>
                 </div>`;
@@ -199,13 +197,11 @@ function renderHistoryList() {
             const completedSets = ex.sets.filter(s => s.completed);
             if (!completedSets.length) {
                 const firstSet = ex.sets[0];
-                const rowClick = isExpanded
-                    ? `onclick="event.stopPropagation(); openEditModal(${log.id}, ${firstSet.id}, '${escapedName}', '${ex.type}', ${ex.type === 'cardio' ? firstSet.duration_minutes : 'null'}, ${ex.type === 'cardio' ? 'null' : firstSet.weight}, '${ex.type === 'cardio' ? '' : firstSet.planned_reps}')"`
-                    : `onclick="event.stopPropagation(); window.location.href=SCRIPT_ROOT+'/exercises/${exerciseId}/progress'"`;
-                return `<div class="history-exercise" ${rowClick} style="cursor: pointer;">
+                return `<div class="history-exercise" onclick="event.stopPropagation(); openEditModal(${log.id}, ${firstSet.id}, '${escapedName}', 'strength', null, ${firstSet.weight}, '${firstSet.planned_reps}')" style="cursor: pointer;">
                     <span class="name" style="flex: 1;">${ex.name}</span>
                     <span class="skipped">Skipped</span>
                     <span class="history-exercise-actions">
+                        <button class="history-exercise-progress" onclick="event.stopPropagation(); window.location.href=SCRIPT_ROOT+'/exercises/${exerciseId}/progress'" title="View progress">↗</button>
                         <button class="history-exercise-delete" onclick="event.stopPropagation(); deleteExercise(${log.id}, ${firstSet.id})" title="Delete exercise">×</button>
                     </span>
                 </div>`;
@@ -213,13 +209,11 @@ function renderHistoryList() {
 
             const weight = completedSets[0].weight;
             const repsStr = completedSets.map(s => s.actual_reps).join('/');
-            const rowClick = isExpanded
-                ? `onclick="event.stopPropagation(); openEditModal(${log.id}, ${completedSets[0].id}, '${escapedName}', 'strength', null, ${weight}, '${completedSets.map(s => s.actual_reps).join(',')}')"`
-                : `onclick="event.stopPropagation(); window.location.href=SCRIPT_ROOT+'/exercises/${exerciseId}/progress'"`;
-            return `<div class="history-exercise" ${rowClick} style="cursor: pointer;">
+            return `<div class="history-exercise" onclick="event.stopPropagation(); openEditModal(${log.id}, ${completedSets[0].id}, '${escapedName}', 'strength', null, ${weight}, '${completedSets.map(s => s.actual_reps).join(',')}')" style="cursor: pointer;">
                 <span class="name" style="flex: 1;">${ex.name}</span>
                 <span class="result">${repsStr} ${weight ? weight + 'lb' : ''}</span>
                 <span class="history-exercise-actions">
+                    <button class="history-exercise-progress" onclick="event.stopPropagation(); window.location.href=SCRIPT_ROOT+'/exercises/${exerciseId}/progress'" title="View progress">↗</button>
                     <button class="history-exercise-delete" onclick="event.stopPropagation(); deleteExercise(${log.id}, ${completedSets[0].id})" title="Delete exercise">×</button>
                 </span>
             </div>`;

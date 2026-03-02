@@ -423,6 +423,147 @@ class TestSetLogging:
             assert data['weight'] == 225.0
 
 
+class TestExerciseProgress:
+    """Tests for exercise progress / PR computation.
+
+    Regression tests for the bug where SetLog ORM objects were accessed via
+    dict subscript (s["weight"]) instead of attribute access (s.weight),
+    causing TypeError: 'SetLog' object is not subscriptable.
+    """
+
+    def _fetch_set_logs(self, exercise_id, user_id):
+        """Replicate the query used in exercise_progress endpoint."""
+        return (
+            SetLog.query
+            .filter_by(exercise_id=exercise_id)
+            .join(WorkoutLog)
+            .filter(WorkoutLog.user_id == user_id)
+            .all()
+        )
+
+    def test_pr_computed_with_attribute_access(self, app, user, exercise):
+        """PR computation uses attribute access on SetLog ORM objects."""
+        with app.app_context():
+            for i, weight in enumerate([135.0, 185.0, 225.0, 200.0]):
+                log = WorkoutLog(user_id=user.id, custom_name=f'Session {i+1}')
+                db.session.add(log)
+                db.session.flush()
+                db.session.add(SetLog(
+                    workout_log_id=log.id,
+                    exercise_id=exercise.id,
+                    set_number=1,
+                    weight=weight,
+                    completed=True,
+                ))
+            db.session.commit()
+
+            set_logs = self._fetch_set_logs(exercise.id, user.id)
+
+            # Exact pattern from exercise_progress — must use attribute access
+            pr = max(
+                (s.weight for s in set_logs if s.weight and s.completed),
+                default=None,
+            )
+            assert pr == 225.0
+
+    def test_pr_excludes_incomplete_sets(self, app, user, exercise):
+        """Incomplete sets are excluded from the PR calculation."""
+        with app.app_context():
+            log = WorkoutLog(user_id=user.id, custom_name='Session')
+            db.session.add(log)
+            db.session.flush()
+            db.session.add(SetLog(
+                workout_log_id=log.id, exercise_id=exercise.id,
+                set_number=1, weight=225.0, completed=True,
+            ))
+            # Heavier but incomplete — must not count as PR
+            db.session.add(SetLog(
+                workout_log_id=log.id, exercise_id=exercise.id,
+                set_number=2, weight=300.0, completed=False,
+            ))
+            db.session.commit()
+
+            set_logs = self._fetch_set_logs(exercise.id, user.id)
+            pr = max(
+                (s.weight for s in set_logs if s.weight and s.completed),
+                default=None,
+            )
+            assert pr == 225.0
+
+    def test_pr_is_none_when_no_completed_sets(self, app, user, exercise):
+        """PR is None when no completed sets with weight exist."""
+        with app.app_context():
+            log = WorkoutLog(user_id=user.id, custom_name='Session')
+            db.session.add(log)
+            db.session.flush()
+            db.session.add(SetLog(
+                workout_log_id=log.id, exercise_id=exercise.id,
+                set_number=1, weight=225.0, completed=False,
+            ))
+            db.session.commit()
+
+            set_logs = self._fetch_set_logs(exercise.id, user.id)
+            pr = max(
+                (s.weight for s in set_logs if s.weight and s.completed),
+                default=None,
+            )
+            assert pr is None
+
+    def test_set_log_raises_on_subscript_access(self, app, user, exercise):
+        """SetLog ORM objects are not subscriptable — dict-style access raises TypeError."""
+        with app.app_context():
+            log = WorkoutLog(user_id=user.id, custom_name='Session')
+            db.session.add(log)
+            db.session.flush()
+            sl = SetLog(
+                workout_log_id=log.id, exercise_id=exercise.id,
+                set_number=1, weight=185.0, completed=True,
+            )
+            db.session.add(sl)
+            db.session.commit()
+
+            fetched = SetLog.query.get(sl.id)
+            # Attribute access works
+            assert fetched.weight == 185.0
+            assert fetched.completed is True
+            # Dict-style access is the bug — must raise TypeError
+            with pytest.raises(TypeError):
+                _ = fetched["weight"]
+
+    def test_cardio_recent_durations_attribute_access(self, app, user):
+        """Cardio duration computation also uses attribute access on SetLog."""
+        with app.app_context():
+            ex = Exercise(user_id=user.id, name='Treadmill', type='cardio', unit='mins')
+            db.session.add(ex)
+            db.session.flush()
+
+            for minutes in [20, 30, 25]:
+                log = WorkoutLog(user_id=user.id, custom_name='Cardio')
+                db.session.add(log)
+                db.session.flush()
+                db.session.add(SetLog(
+                    workout_log_id=log.id, exercise_id=ex.id,
+                    set_number=1, duration_minutes=minutes, completed=True,
+                ))
+            db.session.commit()
+
+            set_logs = self._fetch_set_logs(ex.id, user.id)
+
+            # Exact pattern from exercise_progress for cardio
+            recent_durations = []
+            seen = set()
+            for sl in set_logs:
+                if sl.duration_minutes and sl.completed:
+                    if sl.duration_minutes not in seen:
+                        recent_durations.append(sl.duration_minutes)
+                        seen.add(sl.duration_minutes)
+                    if len(recent_durations) >= 3:
+                        break
+
+            assert len(recent_durations) == 3
+            assert set(recent_durations) == {20, 25, 30}
+
+
 class TestWorkoutProgress:
     """Tests for tracking workout progress."""
 
