@@ -110,6 +110,9 @@ async function loadHome() {
 }
 
 async function startWorkout(workoutId, programId) {
+    const btn = event.target;
+    if (btn.disabled) return;
+    btn.disabled = true;
     try {
         const log = await api.post('/api/logs', {
             workout_id: workoutId,
@@ -118,6 +121,7 @@ async function startWorkout(workoutId, programId) {
         window.location.href = SCRIPT_ROOT + `/workout/${log.id}/active`;
     } catch (err) {
         showToast(err.message, 'error');
+        btn.disabled = false;
     }
 }
 

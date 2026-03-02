@@ -84,6 +84,16 @@ def start_workout():
     if not workout:
         return jsonify({"error": "Workout not found"}), 404
 
+    # Return existing incomplete log instead of creating a duplicate
+    existing = (
+        WorkoutLog.query
+        .filter_by(user_id=current_user.id, workout_id=workout_id)
+        .filter(WorkoutLog.completed_at.is_(None))
+        .first()
+    )
+    if existing:
+        return jsonify(existing.to_dict(include_sets=True)), 200
+
     log = WorkoutLog(
         user_id=current_user.id,
         workout_id=workout_id,
