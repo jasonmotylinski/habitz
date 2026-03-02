@@ -180,11 +180,12 @@ function renderHistoryList() {
 
         const exerciseRows = Array.from(exerciseMap.values()).map(ex => {
             const exerciseId = ex.sets[0].exercise_id;
+            const escapedName = ex.name.replace(/'/g, "\\'");
             if (ex.type === 'cardio') {
                 const s = ex.sets[0];
                 const result = s.completed ? `${s.duration_minutes} min` : 'Skipped';
                 const rowClick = isExpanded
-                    ? `onclick="event.stopPropagation(); openEditModal(${log.id}, ${s.id}, '${ex.name}', 'cardio', ${s.duration_minutes}, null)"`
+                    ? `onclick="event.stopPropagation(); openEditModal(${log.id}, ${s.id}, '${escapedName}', 'cardio', ${s.duration_minutes}, null)"`
                     : `onclick="event.stopPropagation(); window.location.href=SCRIPT_ROOT+'/exercises/${exerciseId}/progress'"`;
                 return `<div class="history-exercise" ${rowClick} style="cursor: pointer;">
                     <span class="name" style="flex: 1;">${ex.name}</span>
@@ -199,7 +200,7 @@ function renderHistoryList() {
             if (!completedSets.length) {
                 const firstSet = ex.sets[0];
                 const rowClick = isExpanded
-                    ? `onclick="event.stopPropagation(); openEditModal(${log.id}, ${firstSet.id}, '${ex.name}', '${ex.type}', ${ex.type === 'cardio' ? firstSet.duration_minutes : 'null'}, ${ex.type === 'cardio' ? 'null' : firstSet.weight}, '${ex.type === 'cardio' ? '' : firstSet.planned_reps}')"`
+                    ? `onclick="event.stopPropagation(); openEditModal(${log.id}, ${firstSet.id}, '${escapedName}', '${ex.type}', ${ex.type === 'cardio' ? firstSet.duration_minutes : 'null'}, ${ex.type === 'cardio' ? 'null' : firstSet.weight}, '${ex.type === 'cardio' ? '' : firstSet.planned_reps}')"`
                     : `onclick="event.stopPropagation(); window.location.href=SCRIPT_ROOT+'/exercises/${exerciseId}/progress'"`;
                 return `<div class="history-exercise" ${rowClick} style="cursor: pointer;">
                     <span class="name" style="flex: 1;">${ex.name}</span>
@@ -213,7 +214,7 @@ function renderHistoryList() {
             const weight = completedSets[0].weight;
             const repsStr = completedSets.map(s => s.actual_reps).join('/');
             const rowClick = isExpanded
-                ? `onclick="event.stopPropagation(); openEditModal(${log.id}, ${completedSets[0].id}, '${ex.name}', 'strength', null, ${weight}, '${completedSets.map(s => s.actual_reps).join(',')}')"`
+                ? `onclick="event.stopPropagation(); openEditModal(${log.id}, ${completedSets[0].id}, '${escapedName}', 'strength', null, ${weight}, '${completedSets.map(s => s.actual_reps).join(',')}')"`
                 : `onclick="event.stopPropagation(); window.location.href=SCRIPT_ROOT+'/exercises/${exerciseId}/progress'"`;
             return `<div class="history-exercise" ${rowClick} style="cursor: pointer;">
                 <span class="name" style="flex: 1;">${ex.name}</span>
