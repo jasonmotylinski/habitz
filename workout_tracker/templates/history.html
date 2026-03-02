@@ -324,22 +324,47 @@ async function saveEdit() {
     if (!editingSet) return;
 
     try {
-        const payload = {};
         if (editingSet.type === 'cardio') {
             const duration = parseInt(document.getElementById('edit-duration').value);
-            payload.duration_minutes = duration;
-            if (duration > 0) {
-                payload.completed = true;
-            }
+            const payload = { duration_minutes: duration };
+            if (duration > 0) payload.completed = true;
+            await api.put(`/api/logs/${editingSet.logId}/sets/${editingSet.setId}`, payload);
         } else {
-            payload.weight = parseFloat(document.getElementById('edit-weight').value);
-            const repsInputs = document.querySelectorAll('#edit-modal-body input[type="number"]');
-            if (repsInputs.length > 1) {
-                payload.actual_reps = parseInt(repsInputs[1].value);
+            const weight = parseFloat(document.getElementById('edit-weight').value) || null;
+            // Slice off the weight input (first); remaining inputs are one per set's reps
+            const allInputs = Array.from(document.querySelectorAll('#edit-modal-body input[type="number"]'));
+            const repInputs = allInputs.slice(1);
+
+            // Find all sets for this exercise from allLogs so we update every set, not just the first
+            const log = allLogs.find(l => l.id === editingSet.logId);
+            const thisSet = log && log.sets && log.sets.find(s => s.id === editingSet.setId);
+            const exerciseSets = thisSet
+                ? log.sets.filter(s => s.exercise_id === thisSet.exercise_id)
+                          .sort((a, b) => a.set_number - b.set_number)
+                : null;
+
+            if (exerciseSets && exerciseSets.length) {
+                await Promise.all(exerciseSets.map((s, i) => {
+                    // Use corresponding rep input; fall back to last input for overflow sets
+                    const reps = repInputs[i]
+                        ? parseInt(repInputs[i].value)
+                        : parseInt(repInputs[repInputs.length - 1]?.value) || s.planned_reps;
+                    return api.put(`/api/logs/${editingSet.logId}/sets/${s.id}`, {
+                        weight,
+                        actual_reps: reps,
+                        completed: true,
+                    });
+                }));
+            } else {
+                // Fallback: update just the known set
+                await api.put(`/api/logs/${editingSet.logId}/sets/${editingSet.setId}`, {
+                    weight,
+                    actual_reps: repInputs[0] ? parseInt(repInputs[0].value) : null,
+                    completed: true,
+                });
             }
         }
 
-        await api.put(`/api/logs/${editingSet.logId}/sets/${editingSet.setId}`, payload);
         showToast('Saved', 'success');
         closeEditModal();
         loadHistory();
