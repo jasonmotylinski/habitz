@@ -118,6 +118,64 @@ def fast_history():
     })
 
 
+@api_bp.route('/fast/<int:fast_id>', methods=['PATCH'])
+@login_required
+def update_fast(fast_id):
+    fast = Fast.query.filter_by(id=fast_id, user_id=current_user.id).first()
+    if not fast:
+        return jsonify({'error': 'Fast not found'}), 404
+    if fast.is_active:
+        return jsonify({'error': 'Cannot edit an active fast. Stop it first.'}), 400
+
+    data = request.get_json(silent=True) or {}
+    errors = []
+
+    # Update started_at if provided
+    if 'started_at' in data:
+        try:
+            new_start = datetime.fromisoformat(data['started_at'].replace('Z', '+00:00'))
+            if new_start.tzinfo is not None:
+                new_start = new_start.replace(tzinfo=None)
+            fast.started_at = new_start
+        except (ValueError, AttributeError):
+            errors.append('Invalid started_at format')
+
+    # Update ended_at if provided
+    if 'ended_at' in data:
+        try:
+            new_end = datetime.fromisoformat(data['ended_at'].replace('Z', '+00:00'))
+            if new_end.tzinfo is not None:
+                new_end = new_end.replace(tzinfo=None)
+            fast.ended_at = new_end
+        except (ValueError, AttributeError):
+            errors.append('Invalid ended_at format')
+
+    # Update target_hours if provided
+    if 'target_hours' in data:
+        try:
+            fast.target_hours = max(1, min(72, int(data['target_hours'])))
+        except (ValueError, TypeError):
+            errors.append('Invalid target_hours')
+
+    # Update completed status
+    if 'completed' in data:
+        fast.completed = bool(data['completed'])
+
+    # Update note if provided
+    if 'note' in data:
+        fast.note = data['note']
+
+    if errors:
+        return jsonify({'error': '; '.join(errors)}), 400
+
+    try:
+        db.session.commit()
+        return jsonify(fast.to_dict())
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+
 @api_bp.route('/fast/<int:fast_id>', methods=['DELETE'])
 @login_required
 def delete_fast(fast_id):

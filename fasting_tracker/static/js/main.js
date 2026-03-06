@@ -459,6 +459,7 @@ function createHistoryCard(fast) {
 
     const checkIcon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;
     const xIcon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    const editIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L21 7"/></svg>`;
 
     card.innerHTML = `
         <div class="history-status ${fast.completed ? 'success' : 'incomplete'}">
@@ -468,14 +469,147 @@ function createHistoryCard(fast) {
             <div class="history-date">${dateStr} at ${timeStr}</div>
             <div class="history-meta">${durationStr} / ${fast.target_hours}h target</div>
         </div>
-        <button class="history-delete" title="Delete" data-id="${fast.id}">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        </button>
+        <div class="history-actions">
+            <button class="history-edit" title="Edit" data-id="${fast.id}">
+                ${editIcon}
+            </button>
+            <button class="history-delete" title="Delete" data-id="${fast.id}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+        </div>
     `;
 
+    card.querySelector('.history-edit').addEventListener('click', () => openEditFastModal(fast));
     card.querySelector('.history-delete').addEventListener('click', () => deleteFast(fast.id, card));
 
     return card;
+}
+
+let editingFastData = null;
+
+function openEditFastModal(fast) {
+    editingFastData = fast;
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'edit-fast-modal';
+
+    const startDate = new Date(fast.started_at);
+    const endDate = fast.ended_at ? new Date(fast.ended_at) : null;
+
+    // Convert to local datetime-local format
+    const localStart = new Date(startDate.getTime() - startDate.getTimezoneOffset() * 60000);
+    const localEnd = endDate ? new Date(endDate.getTime() - endDate.getTimezoneOffset() * 60000) : null;
+
+    const startValue = localStart.toISOString().slice(0, 16);
+    const endValue = localEnd ? localEnd.toISOString().slice(0, 16) : '';
+
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Fast</h2>
+                <button class="modal-close" aria-label="Close">&times;</button>
+            </div>
+            <form id="edit-fast-form">
+                <div class="form-group">
+                    <label for="edit-started-at">Started</label>
+                    <input type="datetime-local" id="edit-started-at" value="${startValue}" required />
+                </div>
+                <div class="form-group">
+                    <label for="edit-ended-at">Ended</label>
+                    <input type="datetime-local" id="edit-ended-at" value="${endValue}" />
+                </div>
+                <div class="form-group">
+                    <label for="edit-target-hours">Target Hours</label>
+                    <input type="number" id="edit-target-hours" value="${fast.target_hours}" min="1" max="72" />
+                </div>
+                <div class="form-group">
+                    <label for="edit-note">Note (optional)</label>
+                    <input type="text" id="edit-note" value="${fast.note || ''}" placeholder="Add a note..." />
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="edit-completed" ${fast.completed ? 'checked' : ''} />
+                        Mark as completed
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn--ghost" id="edit-cancel">Cancel</button>
+                    <button type="submit" class="btn btn--primary">Save</button>
+                </div>
+            </form>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', closeEditFastModal);
+    modal.querySelector('#edit-cancel').addEventListener('click', closeEditFastModal);
+    modal.querySelector('#edit-fast-form').addEventListener('submit', saveEditFast);
+
+    // Close on overlay click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeEditFastModal();
+    });
+}
+
+function closeEditFastModal() {
+    const modal = document.getElementById('edit-fast-modal');
+    if (modal) {
+        modal.style.opacity = '0';
+        modal.style.transition = 'opacity 0.2s';
+        setTimeout(() => modal.remove(), 200);
+    }
+    editingFastData = null;
+}
+
+async function saveEditFast(e) {
+    e.preventDefault();
+    if (!editingFastData) return;
+
+    const startInput = document.getElementById('edit-started-at');
+    const endInput = document.getElementById('edit-ended-at');
+    const targetInput = document.getElementById('edit-target-hours');
+    const completedInput = document.getElementById('edit-completed');
+    const noteInput = document.getElementById('edit-note');
+
+    const startDate = new Date(startInput.value);
+    const endDate = endInput.value ? new Date(endInput.value) : null;
+
+    if (isNaN(startDate.getTime())) {
+        alert('Invalid start date/time');
+        return;
+    }
+
+    const payload = {
+        started_at: startDate.toISOString(),
+        target_hours: parseInt(targetInput.value),
+        completed: completedInput.checked,
+        note: noteInput.value,
+    };
+
+    if (endDate && !isNaN(endDate.getTime())) {
+        payload.ended_at = endDate.toISOString();
+    }
+
+    try {
+        const res = await fetch(window.SCRIPT_ROOT + `/api/fast/${editingFastData.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            alert(err.error || 'Failed to update fast');
+            return;
+        }
+
+        closeEditFastModal();
+        // Refresh the history list
+        resetHistory();
+    } catch (e) {
+        console.error('Failed to update fast:', e);
+        alert('Error updating fast');
+    }
 }
 
 async function deleteFast(id, card) {
