@@ -23,7 +23,7 @@ def dashboard():
 @main_bp.route('/history')
 @login_required
 def history():
-    return render_template('history.html')
+    return render_template('history.html', user_timezone=current_user.timezone or 'UTC')
 
 
 @main_bp.route('/settings', methods=['GET', 'POST'])

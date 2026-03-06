@@ -2,6 +2,7 @@
 {% block title %}Dashboard — Fasting Tracker{% endblock %}
 
 {% block content %}
+<script>window.USER_TIMEZONE = '{{ current_user.timezone or "UTC" }}';</script>
 <div class="dashboard">
     <!-- Timer Section -->
     <div class="timer-section" id="timer-section">

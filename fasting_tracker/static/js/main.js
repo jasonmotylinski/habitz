@@ -114,9 +114,19 @@ async function stopFast() {
 
 function openStartEdit() {
     const d = new Date(activeFast.started_at);
-    // Convert UTC to local datetime-local string (YYYY-MM-DDTHH:MM)
-    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-    document.getElementById('start-time-input').value = local.toISOString().slice(0, 16);
+    const timeZone = window.USER_TIMEZONE || 'UTC';
+    
+    // Format the UTC date into user's timezone components
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', timeZone: timeZone, hour12: false
+    });
+    const parts = formatter.formatToParts(d);
+    const date = {};
+    parts.forEach(p => { if (p.type !== 'literal') date[p.type] = p.value; });
+    
+    const localStr = `${date.year}-${date.month}-${date.day}T${date.hour}:${date.minute}`;
+    document.getElementById('start-time-input').value = localStr;
     document.getElementById('timer-start-row').classList.add('hidden');
     document.getElementById('timer-start-edit').classList.remove('hidden');
 }
@@ -163,7 +173,8 @@ function showActiveState() {
 
     const startedAt = new Date(activeFast.started_at);
     const endAt = new Date(startedAt.getTime() + activeFast.target_hours * 3600 * 1000);
-    const timeOpts = { hour: 'numeric', minute: '2-digit' };
+    const timeZone = window.USER_TIMEZONE || 'UTC';
+    const timeOpts = { hour: 'numeric', minute: '2-digit', timeZone: timeZone };
     document.getElementById('timer-start-time').textContent = startedAt.toLocaleTimeString([], timeOpts);
     document.getElementById('timer-end-time').textContent = endAt.toLocaleTimeString([], timeOpts);
 }
@@ -446,11 +457,13 @@ function createHistoryCard(fast) {
     card.dataset.id = fast.id;
 
     const date = new Date(fast.started_at);
+    const timeZone = window.USER_TIMEZONE || 'UTC';
+    
     const dateStr = date.toLocaleDateString('en-US', {
-        weekday: 'short', month: 'short', day: 'numeric'
+        weekday: 'short', month: 'short', day: 'numeric', timeZone: timeZone
     });
     const timeStr = date.toLocaleTimeString('en-US', {
-        hour: 'numeric', minute: '2-digit'
+        hour: 'numeric', minute: '2-digit', timeZone: timeZone
     });
 
     const hours = Math.floor(fast.duration_seconds / 3600);
