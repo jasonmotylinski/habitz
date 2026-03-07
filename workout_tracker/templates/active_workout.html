@@ -12,10 +12,6 @@
         </div>
     </div>
 
-    <div class="tabs">
-        <button class="tab active" onclick="switchTab('workout', this)">Workout</button>
-    </div>
-
     <div id="exercises-container"></div>
 
     <div class="card mt-4">
@@ -219,10 +215,6 @@ async function updateCardioSet(setId, minutes) {
     });
 }
 
-function switchTab(tab, el) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
-}
 
 async function finishWorkout() {
     const notes = document.getElementById('notes').value.trim();
