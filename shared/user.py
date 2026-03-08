@@ -27,6 +27,8 @@ class User(UserMixin, db.Model):
 
     # fasting_tracker: default fast duration
     default_fast_hours = db.Column(db.Integer, default=16)
+    # fasting_tracker: default micro fast duration
+    default_micro_fast_minutes = db.Column(db.Integer, default=180)
 
     # user timezone (IANA timezone name)
     timezone = db.Column(db.String(50), default='America/New_York')
@@ -45,6 +47,9 @@ class User(UserMixin, db.Model):
     # fasting_tracker relationships
     fasts = db.relationship(
         'Fast', backref='user', lazy='dynamic', cascade='all, delete-orphan'
+    )
+    micro_fasts = db.relationship(
+        'MicroFast', backref='user', lazy='dynamic', cascade='all, delete-orphan'
     )
 
     # meal_planner relationships
@@ -104,4 +109,5 @@ class User(UserMixin, db.Model):
             'carb_goal_g': self.carb_goal_g,
             'fat_goal_g': self.fat_goal_g,
             'default_fast_hours': self.default_fast_hours,
+            'default_micro_fast_minutes': self.default_micro_fast_minutes,
         }

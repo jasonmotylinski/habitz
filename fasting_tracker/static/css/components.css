@@ -651,6 +651,7 @@
     margin-bottom: 6px;
 }
 
+.form-group select,
 .form-group input[type="text"],
 .form-group input[type="number"],
 .form-group input[type="datetime-local"] {
@@ -671,6 +672,7 @@
     color: var(--text-faint);
 }
 
+.form-group select:focus,
 .form-group input[type="text"]:focus,
 .form-group input[type="number"]:focus,
 .form-group input[type="datetime-local"]:focus {
@@ -753,4 +755,231 @@
     .presets-grid {
         grid-template-columns: repeat(6, 1fr);
     }
+}
+
+/* ---- Micro Fast Card ---- */
+.micro-fast-card {
+    background: var(--surface-raised);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    margin-top: var(--space-xl);
+}
+
+.micro-fast-header {
+    margin-bottom: var(--space-md);
+}
+
+.micro-fast-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Meal window presets */
+.micro-windows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-md);
+}
+
+.micro-window {
+    padding: 10px var(--space-md);
+    border-radius: var(--radius-md);
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-secondary);
+    background: var(--surface-overlay);
+    border: 1.5px solid var(--border);
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.micro-window:hover {
+    border-color: var(--blue-500);
+    color: var(--text-primary);
+}
+
+.micro-window.active {
+    background: rgba(59, 109, 224, 0.08);
+    border-color: var(--blue-500);
+    color: var(--blue-400);
+}
+
+/* Target duration presets */
+.micro-targets {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--space-xs);
+    margin-bottom: var(--space-sm);
+}
+
+.micro-target-btn {
+    padding: 8px 4px;
+    border-radius: var(--radius-md);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: var(--surface-overlay);
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.micro-target-btn:hover {
+    border-color: var(--blue-500);
+    color: var(--blue-400);
+}
+
+.micro-target-btn.active {
+    background: rgba(59, 109, 224, 0.08);
+    border-color: var(--blue-500);
+    color: var(--blue-400);
+}
+
+.micro-custom-input {
+    width: 100%;
+    background: var(--surface-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 12px;
+    margin-bottom: var(--space-sm);
+    text-align: center;
+    transition: border-color 0.15s;
+}
+
+.micro-custom-input::placeholder {
+    color: var(--text-faint);
+    font-weight: 400;
+}
+
+.micro-custom-input:focus {
+    outline: none;
+    border-color: var(--blue-500);
+}
+
+.micro-custom-input::-webkit-outer-spin-button,
+.micro-custom-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+
+/* Active state */
+.micro-active {
+    text-align: center;
+}
+
+.micro-active-label {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    margin-bottom: var(--space-sm);
+    min-height: 16px;
+}
+
+.micro-active-time {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.micro-elapsed {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 40px;
+    color: var(--text-primary);
+    letter-spacing: -0.03em;
+    line-height: 1;
+}
+
+.micro-of {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+/* Progress bar */
+.micro-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: var(--space-md);
+}
+
+.micro-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--blue-400);
+    border-radius: 99px;
+    transition: width 1s linear, background 0.4s;
+}
+
+.micro-bar-fill.completed {
+    background: var(--accent);
+}
+
+/* Today log */
+.micro-log {
+    margin-top: var(--space-md);
+    border-top: 1px solid var(--border-light, var(--border));
+    padding-top: var(--space-md);
+}
+
+.micro-log-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.micro-log-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: 7px 0;
+}
+
+.micro-log-item + .micro-log-item {
+    border-top: 1px solid var(--border-light, var(--border));
+}
+
+.micro-log-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+}
+
+.micro-log-dot.completed {
+    background: var(--accent);
+}
+
+.micro-log-label {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.micro-log-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-weight: 500;
 }

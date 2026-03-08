@@ -20,6 +20,13 @@ def dashboard():
     return render_template('dashboard.html')
 
 
+@main_bp.route('/micro')
+@login_required
+def micro():
+    return render_template('micro_fast.html',
+                           default_micro_fast_minutes=current_user.default_micro_fast_minutes or 180)
+
+
 @main_bp.route('/history')
 @login_required
 def history():

@@ -3,8 +3,9 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
+from sqlalchemy import func
 
-from .models import Fast, db
+from .models import Fast, MicroFast, db
 from .services.stats import get_daily_progress, get_monthly_progress
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -237,4 +238,150 @@ def update_goals():
     if 'default_fast_hours' in data:
         current_user.default_fast_hours = max(1, min(72, int(data['default_fast_hours'])))
     db.session.commit()
+    return jsonify(current_user.to_dict())
+
+
+# ── Micro Fast endpoints ──────────────────────────────────────────────────────
+
+@api_bp.route('/micro/start', methods=['POST'])
+@login_required
+def start_micro_fast():
+    active = MicroFast.query.filter_by(user_id=current_user.id, ended_at=None).first()
+    if active:
+        return jsonify({'error': 'A micro fast is already active'}), 400
+
+    data = request.get_json(silent=True) or {}
+    target_minutes = data.get('target_minutes', current_user.default_micro_fast_minutes or 180)
+    label = data.get('label')
+
+    mf = MicroFast(
+        user_id=current_user.id,
+        target_minutes=max(1, int(target_minutes)),
+        label=label,
+        started_at=datetime.utcnow(),
+    )
+    db.session.add(mf)
+    db.session.commit()
+    return jsonify(mf.to_dict()), 201
+
+
+@api_bp.route('/micro/stop', methods=['POST'])
+@login_required
+def stop_micro_fast():
+    active = MicroFast.query.filter_by(user_id=current_user.id, ended_at=None).first()
+    if not active:
+        return jsonify({'error': 'No active micro fast'}), 400
+
+    active.ended_at = datetime.utcnow()
+    active.completed = active.duration_seconds >= active.target_seconds
+    db.session.commit()
+    return jsonify(active.to_dict())
+
+
+@api_bp.route('/micro/active')
+@login_required
+def active_micro_fast():
+    active = MicroFast.query.filter_by(user_id=current_user.id, ended_at=None).first()
+    if not active:
+        return jsonify(None)
+    return jsonify(active.to_dict())
+
+
+@api_bp.route('/micro/today')
+@login_required
+def micro_fast_today():
+    from zoneinfo import ZoneInfo
+    from datetime import timezone as dt_timezone
+    tz = ZoneInfo(current_user.timezone or 'America/New_York')
+    today_local = datetime.now(dt_timezone.utc).astimezone(tz).date()
+
+    records = MicroFast.query.filter(
+        MicroFast.user_id == current_user.id,
+        func.date(MicroFast.started_at) == today_local,
+    ).order_by(MicroFast.started_at.asc()).all()
+
+    return jsonify([mf.to_dict() for mf in records])
+
+
+@api_bp.route('/micro/<int:mf_id>', methods=['PATCH'])
+@login_required
+def update_micro_fast(mf_id):
+    mf = MicroFast.query.filter_by(id=mf_id, user_id=current_user.id).first()
+    if not mf:
+        return jsonify({'error': 'Micro fast not found'}), 404
+    if mf.is_active:
+        return jsonify({'error': 'Cannot edit an active micro fast. Stop it first.'}), 400
+
+    data = request.get_json(silent=True) or {}
+    errors = []
+
+    if 'started_at' in data:
+        try:
+            new_start = datetime.fromisoformat(data['started_at'].replace('Z', '+00:00'))
+            if new_start.tzinfo is not None:
+                new_start = new_start.replace(tzinfo=None)
+            mf.started_at = new_start
+        except (ValueError, AttributeError):
+            errors.append('Invalid started_at format')
+
+    if 'ended_at' in data:
+        try:
+            new_end = datetime.fromisoformat(data['ended_at'].replace('Z', '+00:00'))
+            if new_end.tzinfo is not None:
+                new_end = new_end.replace(tzinfo=None)
+            mf.ended_at = new_end
+        except (ValueError, AttributeError):
+            errors.append('Invalid ended_at format')
+
+    if 'target_minutes' in data:
+        try:
+            mf.target_minutes = max(1, min(360, int(data['target_minutes'])))
+        except (ValueError, TypeError):
+            errors.append('Invalid target_minutes')
+
+    if 'completed' in data:
+        mf.completed = bool(data['completed'])
+
+    if 'label' in data:
+        mf.label = data['label']
+
+    if 'note' in data:
+        mf.note = data['note']
+
+    if errors:
+        return jsonify({'error': '; '.join(errors)}), 400
+
+    try:
+        db.session.commit()
+        return jsonify(mf.to_dict())
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+
+@api_bp.route('/micro/<int:mf_id>', methods=['DELETE'])
+@login_required
+def delete_micro_fast(mf_id):
+    mf = MicroFast.query.filter_by(id=mf_id, user_id=current_user.id).first()
+    if not mf:
+        return jsonify({'error': 'Micro fast not found'}), 404
+    if mf.is_active:
+        return jsonify({'error': 'Cannot delete an active micro fast. Stop it first.'}), 400
+
+    db.session.delete(mf)
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
+@api_bp.route('/user/micro-goal', methods=['PUT'])
+@login_required
+def update_micro_goal():
+    data = request.get_json(silent=True) or {}
+    if 'default_micro_fast_minutes' in data:
+        try:
+            minutes = max(30, min(360, int(data['default_micro_fast_minutes'])))
+            current_user.default_micro_fast_minutes = minutes
+            db.session.commit()
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Invalid default_micro_fast_minutes'}), 400
     return jsonify(current_user.to_dict())

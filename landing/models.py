@@ -11,7 +11,7 @@ class Habit(db.Model):
     name        = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(500), default='')
     habit_type  = db.Column(db.String(20), nullable=False, default='manual')
-    # 'manual' | 'workout' | 'calories' | 'fasting' | 'meals'
+    # 'manual' | 'workout' | 'calories' | 'fasting' | 'meals' | 'microfasting'
     icon        = db.Column(db.String(10), default='✓')
     color       = db.Column(db.String(7), default='#4A90E2')
     sort_order  = db.Column(db.Integer, default=0)

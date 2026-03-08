@@ -1,7 +1,7 @@
 """Tests for fasting tracker API endpoints."""
 import pytest
 from datetime import datetime, timedelta
-from fasting_tracker.models import Fast
+from fasting_tracker.models import Fast, MicroFast
 from shared import db
 from shared.user import User
 
@@ -334,3 +334,177 @@ class TestFastDifferentDurations:
             db.session.commit()
 
             assert fast.target_seconds == 72000
+
+
+# ---------------------------------------------------------------------------
+# Micro fast HTTP API tests
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def fasting_app():
+    """Create a fasting tracker Flask app for HTTP testing."""
+    import os
+    os.environ['DATABASE_URL'] = 'sqlite:///:memory:'
+
+    # Import all models BEFORE create_app so that the household table is
+    # registered in SQLAlchemy metadata before db.create_all() runs inside
+    # fasting_tracker's create_app (User.household_id FK requires it).
+    import meal_planner.models     # noqa: F401
+    import workout_tracker.models  # noqa: F401
+    import calorie_tracker.models  # noqa: F401
+    import fasting_tracker.models  # noqa: F401
+    import landing.models          # noqa: F401
+
+    from fasting_tracker import create_app
+    app = create_app('testing')
+    app.config['TESTING'] = True
+    app.config['WTF_CSRF_ENABLED'] = False
+    app.config['SQLALCHEMY_ECHO'] = False
+
+    with app.app_context():
+        db.session.configure(expire_on_commit=False)
+        yield app
+
+        db.session.remove()
+        db.drop_all()
+
+
+@pytest.fixture
+def fasting_user(fasting_app):
+    """Create a test user in the fasting tracker app."""
+    with fasting_app.app_context():
+        user = User(
+            email='fasting@example.com',
+            username='fastinguser',
+            timezone='America/New_York',
+        )
+        user.set_password('password123')
+        db.session.add(user)
+        db.session.commit()
+        db.session.refresh(user)
+        db.session.expunge(user)
+        return user
+
+
+@pytest.fixture
+def fasting_client(fasting_app, fasting_user):
+    """Authenticated test client for the fasting tracker app."""
+    client = fasting_app.test_client()
+    with client.session_transaction() as sess:
+        sess['_user_id'] = str(fasting_user.id)
+    return client, fasting_user
+
+
+class TestMicroFastAPI:
+    """HTTP API tests for micro fast endpoints."""
+
+    def test_start_micro_fast(self, fasting_app, fasting_client):
+        """POST /api/micro/start returns 201 with id and default target_minutes=180."""
+        client, user = fasting_client
+        resp = client.post('/api/micro/start', json={})
+        assert resp.status_code == 201
+        data = resp.get_json()
+        assert 'id' in data
+        assert data['target_minutes'] == 180
+        # Active fast: no ended_at in response
+        assert 'ended_at' not in data
+
+    def test_start_micro_fast_with_label_and_target(self, fasting_app, fasting_client):
+        """POST /api/micro/start with label and target_minutes stores them correctly."""
+        client, user = fasting_client
+        resp = client.post('/api/micro/start', json={
+            'label': 'lunch-dinner',
+            'target_minutes': 210,
+        })
+        assert resp.status_code == 201
+        data = resp.get_json()
+        assert data['label'] == 'lunch-dinner'
+        assert data['target_minutes'] == 210
+
+    def test_start_micro_fast_conflict(self, fasting_app, fasting_client):
+        """Starting a second micro fast while one is active returns 400."""
+        client, user = fasting_client
+        client.post('/api/micro/start', json={})
+        resp = client.post('/api/micro/start', json={})
+        assert resp.status_code == 400
+
+    def test_stop_micro_fast(self, fasting_app, fasting_client):
+        """POST /api/micro/stop ends the active micro fast; completed=False for instant stop."""
+        client, user = fasting_client
+        client.post('/api/micro/start', json={})
+        resp = client.post('/api/micro/stop')
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert 'ended_at' in data
+        # 0 elapsed << 180-minute target → not completed
+        assert data['completed'] is False
+
+    def test_stop_micro_fast_no_active(self, fasting_app, fasting_client):
+        """POST /api/micro/stop with no active micro fast returns 400."""
+        client, user = fasting_client
+        resp = client.post('/api/micro/stop')
+        assert resp.status_code == 400
+
+    def test_active_micro_fast(self, fasting_app, fasting_client):
+        """GET /api/micro/active returns the active fast, then null after stopping."""
+        client, user = fasting_client
+        start_resp = client.post('/api/micro/start', json={})
+        mf_id = start_resp.get_json()['id']
+
+        resp = client.get('/api/micro/active')
+        assert resp.status_code == 200
+        active_data = resp.get_json()
+        assert active_data is not None
+        assert active_data['id'] == mf_id
+
+        client.post('/api/micro/stop')
+
+        resp2 = client.get('/api/micro/active')
+        assert resp2.status_code == 200
+        assert resp2.get_json() is None
+
+    def test_today_micro_fasts(self, fasting_app, fasting_client):
+        """GET /api/micro/today returns a list containing the stopped fast."""
+        client, user = fasting_client
+        client.post('/api/micro/start', json={})
+        client.post('/api/micro/stop')
+
+        resp = client.get('/api/micro/today')
+        assert resp.status_code == 200
+        items = resp.get_json()
+        assert isinstance(items, list)
+        assert len(items) == 1
+
+    def test_delete_micro_fast(self, fasting_app, fasting_client):
+        """DELETE /api/micro/<id> removes a stopped micro fast."""
+        client, user = fasting_client
+        start_resp = client.post('/api/micro/start', json={})
+        mf_id = start_resp.get_json()['id']
+        client.post('/api/micro/stop')
+
+        del_resp = client.delete(f'/api/micro/{mf_id}')
+        assert del_resp.status_code == 200
+        assert del_resp.get_json() == {'ok': True}
+
+        today_resp = client.get('/api/micro/today')
+        items = today_resp.get_json()
+        assert all(item['id'] != mf_id for item in items)
+
+    def test_delete_active_micro_fast_blocked(self, fasting_app, fasting_client):
+        """DELETE on an active micro fast returns 400."""
+        client, user = fasting_client
+        start_resp = client.post('/api/micro/start', json={})
+        mf_id = start_resp.get_json()['id']
+
+        resp = client.delete(f'/api/micro/{mf_id}')
+        assert resp.status_code == 400
+
+    def test_update_micro_goal(self, fasting_app, fasting_client):
+        """PUT /api/user/micro-goal updates default_micro_fast_minutes."""
+        client, user = fasting_client
+        resp = client.put('/api/user/micro-goal', json={
+            'default_micro_fast_minutes': 240,
+        })
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data['default_micro_fast_minutes'] == 240

@@ -304,6 +304,31 @@
     margin-top: var(--space-sm);
 }
 
+/* ---- Micro Fast Page ---- */
+.micro-page {
+    padding-top: var(--space-sm);
+    animation: fadeUp 0.4s var(--ease-out);
+}
+
+.micro-page-header {
+    padding: var(--space-md) 0 var(--space-xl);
+}
+
+.micro-page-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 28px;
+    color: var(--text-primary);
+    letter-spacing: -0.03em;
+}
+
+.micro-page-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-top: var(--space-xs);
+}
+
+
 /* ---- Responsive Tablet ---- */
 @media (min-width: 640px) {
     .landing-content {

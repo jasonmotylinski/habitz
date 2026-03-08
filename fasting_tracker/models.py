@@ -50,3 +50,54 @@ class Fast(db.Model):
         else:
             result['ended_at'] = self.ended_at.isoformat() + 'Z'
         return result
+
+
+class MicroFast(db.Model):
+    __tablename__ = 'micro_fast'
+
+    id             = db.Column(db.Integer, primary_key=True)
+    user_id        = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    started_at     = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    ended_at       = db.Column(db.DateTime, nullable=True)
+    target_minutes = db.Column(db.Integer, nullable=False, default=180)
+    completed      = db.Column(db.Boolean, default=False)
+    label          = db.Column(db.String(50), nullable=True)
+    note           = db.Column(db.String(200), nullable=True)
+    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def is_active(self):
+        return self.ended_at is None
+
+    @property
+    def duration_seconds(self):
+        end = self.ended_at or datetime.utcnow()
+        return (end - self.started_at).total_seconds()
+
+    @property
+    def target_seconds(self):
+        return self.target_minutes * 60
+
+    @property
+    def progress_pct(self):
+        if self.target_seconds == 0:
+            return 100.0
+        return min(100.0, (self.duration_seconds / self.target_seconds) * 100)
+
+    def to_dict(self):
+        result = {
+            'id': self.id,
+            'started_at': self.started_at.isoformat() + 'Z',
+            'target_minutes': self.target_minutes,
+            'target_seconds': self.target_seconds,
+            'duration_seconds': self.duration_seconds,
+            'progress_pct': round(self.progress_pct, 1),
+            'completed': self.completed,
+            'label': self.label,
+            'note': self.note,
+        }
+        if self.is_active:
+            result['remaining_seconds'] = max(0, self.target_seconds - self.duration_seconds)
+        else:
+            result['ended_at'] = self.ended_at.isoformat() + 'Z'
+        return result

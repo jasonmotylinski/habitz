@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Micro Fast{% endblock %}
+
+{% block content %}
+<div class="micro-page">
+    <div class="micro-page-header">
+        <h1 class="micro-page-title">Micro Fast</h1>
+        <p class="micro-page-subtitle">Track the gaps between your meals</p>
+    </div>
+
+    <!-- Ring timer -->
+    <div class="timer-section" id="micro-timer-section">
+        <div class="timer-ring-wrap">
+            <svg class="timer-ring" viewBox="0 0 200 200">
+                <circle class="timer-ring-bg" cx="100" cy="100" r="90" />
+                <circle class="timer-ring-progress" cx="100" cy="100" r="90"
+                    stroke-dasharray="565.49"
+                    stroke-dashoffset="565.49"
+                    id="micro-progress-ring" />
+            </svg>
+            <div class="timer-inner">
+                <div class="timer-idle" id="micro-idle-ring">
+                    <span class="timer-idle-label">Between meals?</span>
+                    <button class="btn btn--primary timer-start-btn" id="micro-start-btn">Start</button>
+                </div>
+                <div class="timer-active hidden" id="micro-active-ring">
+                    <span class="timer-elapsed" id="micro-elapsed">00:00</span>
+                    <span class="timer-target" id="micro-of">of 3h</span>
+                    <span class="timer-pct" id="micro-pct">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="timer-times hidden" id="micro-active-meta">
+            <div class="timer-time">
+                <span class="timer-time-label">Meal gap</span>
+                <span class="timer-time-value" id="micro-active-label">—</span>
+            </div>
+            <div class="timer-time">
+                <span class="timer-time-label">Target end</span>
+                <span class="timer-time-value" id="micro-end-time">—</span>
+            </div>
+        </div>
+
+        <button class="btn btn--ghost btn--full timer-stop-btn hidden" id="micro-stop-btn">End Micro Fast</button>
+    </div>
+
+    <!-- Meal window presets -->
+    <div class="presets" id="micro-windows-section">
+        <h2 class="presets-title">Meal gap</h2>
+        <div class="micro-windows">
+            <button class="micro-window" data-label="breakfast-lunch">Breakfast → Lunch</button>
+            <button class="micro-window" data-label="lunch-dinner">Lunch → Dinner</button>
+            <button class="micro-window" data-label="dinner-bedtime">Dinner → Bedtime</button>
+        </div>
+    </div>
+
+    <!-- Target duration presets -->
+    <div class="presets" id="micro-targets-section">
+        <h2 class="presets-title">Target duration</h2>
+        <div class="presets-grid">
+            <button class="preset micro-target-btn" data-minutes="120">2h</button>
+            <button class="preset micro-target-btn" data-minutes="180">3h</button>
+            <button class="preset micro-target-btn" data-minutes="240">4h</button>
+            <button class="preset micro-target-btn" data-minutes="300">5h</button>
+            <button class="preset micro-target-btn" data-minutes="360">6h</button>
+            <button class="preset micro-target-btn" data-minutes="custom">—</button>
+        </div>
+        <div class="preset-custom">
+            <input type="number" id="micro-custom-input" class="custom-hours-input hidden"
+                   min="30" max="360" placeholder="Custom minutes…">
+        </div>
+    </div>
+
+    <!-- Today's log -->
+    <div class="weekly-summary micro-log hidden" id="micro-log">
+        <h2 class="weekly-title">Today</h2>
+        <div class="micro-log-list" id="micro-today-list"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>window.DEFAULT_MICRO_FAST_MINUTES = {{ default_micro_fast_minutes }};</script>
+<script src="{{ url_for('static', filename='js/micro_fast.js') }}"></script>
+{% endblock %}

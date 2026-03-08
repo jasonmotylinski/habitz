@@ -37,6 +37,14 @@ def check_completion(habit, user, today: date) -> bool:
             func.date(Fast.ended_at) == today,
         ).first() is not None
 
+    elif habit.habit_type == 'microfasting':
+        from fasting_tracker.models import MicroFast
+        return db.session.query(MicroFast).filter(
+            MicroFast.user_id == user.id,
+            MicroFast.completed == True,
+            func.date(MicroFast.ended_at) == today,
+        ).first() is not None
+
     elif habit.habit_type == 'meals':
         if not user.household_id:
             return False
