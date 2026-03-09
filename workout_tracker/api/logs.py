@@ -9,6 +9,31 @@ from ..models.log import WorkoutLog, SetLog
 from ..models.workout import Workout, WorkoutExercise
 
 
+def get_last_weights_for_workout(workout_id, user_id):
+    """
+    Get the most recent weights used for each exercise in a completed workout.
+    Returns a dict mapping exercise_id -> weight.
+    """
+    last_log = (
+        WorkoutLog.query
+        .filter_by(user_id=user_id, workout_id=workout_id)
+        .filter(WorkoutLog.completed_at.isnot(None))
+        .order_by(WorkoutLog.started_at.desc())
+        .first()
+    )
+    
+    if not last_log:
+        return {}
+    
+    # Get the last weight used for each exercise in that log
+    weights_by_exercise = {}
+    for set_log in last_log.sets:
+        if set_log.weight and set_log.exercise_id not in weights_by_exercise:
+            weights_by_exercise[set_log.exercise_id] = set_log.weight
+    
+    return weights_by_exercise
+
+
 @api_bp.route("/logs", methods=["GET"])
 @login_required
 def list_logs():
@@ -110,6 +135,9 @@ def start_workout():
         .all()
     )
 
+    # Get last weights used for this workout
+    last_weights = get_last_weights_for_workout(workout_id, current_user.id)
+
     for we in workout_exercises:
         if we.exercise.type == "cardio":
             set_log = SetLog(
@@ -121,6 +149,8 @@ def start_workout():
             )
             db.session.add(set_log)
         else:
+            # Use last weight if available, otherwise use default
+            weight = last_weights.get(we.exercise_id, we.default_weight)
             for s in range(1, we.default_sets + 1):
                 set_log = SetLog(
                     workout_log_id=log.id,
@@ -128,7 +158,7 @@ def start_workout():
                     set_number=s,
                     planned_reps=we.default_reps,
                     actual_reps=we.default_reps,
-                    weight=we.default_weight,
+                    weight=weight,
                     completed=False,
                 )
                 db.session.add(set_log)
@@ -170,6 +200,9 @@ def update_log(log_id):
             .all()
         )
 
+        # Get last weights used for new workout
+        last_weights = get_last_weights_for_workout(new_workout_id, current_user.id)
+
         for we in workout_exercises:
             if we.exercise.type == "cardio":
                 set_log = SetLog(
@@ -181,6 +214,8 @@ def update_log(log_id):
                 )
                 db.session.add(set_log)
             else:
+                # Use last weight if available, otherwise use default
+                weight = last_weights.get(we.exercise_id, we.default_weight)
                 for s in range(1, we.default_sets + 1):
                     set_log = SetLog(
                         workout_log_id=log.id,
@@ -188,7 +223,7 @@ def update_log(log_id):
                         set_number=s,
                         planned_reps=we.default_reps,
                         actual_reps=we.default_reps,
-                        weight=we.default_weight,
+                        weight=weight,
                         completed=False,
                     )
                     db.session.add(set_log)
@@ -241,6 +276,15 @@ def delete_log(log_id):
     db.session.delete(log)
     db.session.commit()
     return jsonify({"message": "Deleted"}), 200
+
+
+@api_bp.route("/workouts/<int:workout_id>/last-weights", methods=["GET"])
+@login_required
+def get_workout_last_weights(workout_id):
+    """Get the last weights used for each exercise in the most recent completed workout."""
+    workout = Workout.query.filter_by(id=workout_id, user_id=current_user.id).first_or_404()
+    weights = get_last_weights_for_workout(workout_id, current_user.id)
+    return jsonify(weights), 200
 
 
 @api_bp.route("/exercises/<int:exercise_id>/progress", methods=["GET"])
