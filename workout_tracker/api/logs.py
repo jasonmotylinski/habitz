@@ -1,7 +1,10 @@
+import logging
 from datetime import datetime, timezone
 
 from flask import request, jsonify
 from flask_login import login_required, current_user
+
+logger = logging.getLogger(__name__)
 
 from .. import db
 from . import api_bp
@@ -134,7 +137,11 @@ def start_workout():
                 db.session.add(set_log)
 
     db.session.commit()
-    return jsonify(log.to_dict(include_sets=True)), 201
+    result = log.to_dict(include_sets=True)
+    exercise_ids = list({s['exercise_id'] for s in result.get('sets', [])})
+    logger.info('[start_workout] log=%d workout_id=%s sets=%d exercise_ids=%s',
+                log.id, workout_id, len(result.get('sets', [])), exercise_ids)
+    return jsonify(result), 201
 
 
 @api_bp.route("/logs/<int:log_id>", methods=["GET"])

@@ -39,9 +39,14 @@
 const logId = {{ log_id }};
 let logData = null;
 let allWorkouts = [];
+let selectorReady = false;
 
 async function loadLog() {
     logData = await api.get(`/api/logs/${logId}`);
+
+    // Diagnostic: log what the API returned so we can catch data issues
+    const exerciseIds = [...new Set((logData.sets || []).map(s => s.exercise_id))];
+    console.log('[loadLog] workout_id:', logData.workout_id, '| sets:', logData.sets?.length, '| exercise_ids:', exerciseIds);
 
     // Load program to get ordered workouts
     if (logData.program_id) {
@@ -52,6 +57,7 @@ async function loadLog() {
         allWorkouts = await api.get('/api/workouts');
     }
     populateWorkoutSelector();
+    selectorReady = true;
 
     renderExercises();
 }
@@ -64,7 +70,7 @@ function populateWorkoutSelector() {
 }
 
 async function changeWorkout(workoutId) {
-    if (!workoutId || parseInt(workoutId) === logData.workout_id) return;
+    if (!selectorReady || !workoutId || parseInt(workoutId) === logData.workout_id) return;
 
     try {
         const newWorkoutId = parseInt(workoutId);
