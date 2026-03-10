@@ -456,7 +456,7 @@ function createHistoryCard(fast) {
     card.className = 'history-card';
     card.dataset.id = fast.id;
 
-    const date = new Date(fast.started_at);
+    const date = fast.ended_at ? new Date(fast.ended_at) : new Date(fast.started_at);
     const timeZone = window.USER_TIMEZONE || 'UTC';
     
     const dateStr = date.toLocaleDateString('en-US', {
@@ -480,7 +480,7 @@ function createHistoryCard(fast) {
         </div>
         <div class="history-details">
             <div class="history-date">${dateStr} at ${timeStr}</div>
-            <div class="history-meta">${durationStr} / ${fast.target_hours}h target</div>
+            <div class="history-meta">${durationStr} / ${fast.target_hours}h target${fast.note ? ' • ' + fast.note : ''}</div>
         </div>
         <div class="history-actions">
             <button class="history-edit" title="Edit" data-id="${fast.id}">
