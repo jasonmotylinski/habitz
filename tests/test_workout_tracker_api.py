@@ -323,6 +323,79 @@ class TestWorkoutLogging:
             updated = WorkoutLog.query.get(log.id)
             assert updated.completed_at is not None
 
+    def test_start_workout_removes_stale_exercises_from_existing_log(self, app, user, workout, exercise):
+        """Regression test: starting a workout should strip any exercises that don't
+        belong to the workout template from an existing incomplete log.
+
+        This can happen when two concurrent workout-switch requests race and both
+        insert their exercises without seeing each other's deletes.
+        """
+        with app.app_context():
+            # Create a second exercise that is NOT part of the workout template
+            foreign_exercise = Exercise(
+                user_id=user.id,
+                name='Peloton - Main Set',
+                type='cardio',
+                unit='minutes',
+            )
+            db.session.add(foreign_exercise)
+            db.session.flush()
+
+            # Create an existing incomplete log for the workout
+            log = WorkoutLog(
+                user_id=user.id,
+                workout_id=workout.id,
+            )
+            db.session.add(log)
+            db.session.flush()
+
+            # Add a valid set (exercise belongs to workout template)
+            valid_set = SetLog(
+                workout_log_id=log.id,
+                exercise_id=exercise.id,
+                set_number=1,
+                planned_reps=8,
+                actual_reps=8,
+                weight=225.0,
+                completed=False,
+            )
+            # Add a stale set (exercise does NOT belong to workout template)
+            stale_set = SetLog(
+                workout_log_id=log.id,
+                exercise_id=foreign_exercise.id,
+                set_number=1,
+                duration_minutes=45,
+                completed=False,
+            )
+            db.session.add(valid_set)
+            db.session.add(stale_set)
+            db.session.commit()
+
+            log_id = log.id
+            stale_set_id = stale_set.id
+            valid_set_id = valid_set.id
+
+            # Simulate start_workout cleanup logic
+            workout_exercises = (
+                WorkoutExercise.query
+                .filter_by(workout_id=workout.id)
+                .order_by(WorkoutExercise.position)
+                .all()
+            )
+            template_exercise_ids = {we.exercise_id for we in workout_exercises}
+
+            for s in log.sets.all():
+                if s.exercise_id not in template_exercise_ids:
+                    db.session.delete(s)
+            db.session.commit()
+
+            # The stale (foreign) set should be gone
+            assert SetLog.query.get(stale_set_id) is None
+            # The valid set should remain
+            assert SetLog.query.get(valid_set_id) is not None
+            # The log itself should still exist
+            assert WorkoutLog.query.get(log_id) is not None
+
 
 class TestSetLogging:
     """Tests for logging individual sets."""

@@ -120,6 +120,30 @@ def start_workout():
         .first()
     )
     if existing:
+        # Fetch the current workout template exercises (needed below and for new log)
+        workout_exercises = (
+            WorkoutExercise.query
+            .filter_by(workout_id=workout_id)
+            .order_by(WorkoutExercise.position)
+            .all()
+        )
+        template_exercise_ids = {we.exercise_id for we in workout_exercises}
+
+        # Remove any sets that don't belong to this workout's template.
+        # This cleans up corruption from concurrent workout-switch requests.
+        removed = False
+        for s in existing.sets.all():
+            if s.exercise_id not in template_exercise_ids:
+                db.session.delete(s)
+                removed = True
+
+        if removed:
+            logger.warning(
+                '[start_workout] removed stale sets from existing log=%d workout_id=%s',
+                existing.id, workout_id,
+            )
+            db.session.commit()
+
         return jsonify(existing.to_dict(include_sets=True)), 200
 
     log = WorkoutLog(

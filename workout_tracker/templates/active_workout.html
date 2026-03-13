@@ -40,6 +40,7 @@ const logId = {{ log_id }};
 let logData = null;
 let allWorkouts = [];
 let selectorReady = false;
+let workoutChanging = false;
 
 async function loadLog() {
     logData = await api.get(`/api/logs/${logId}`);
@@ -71,8 +72,13 @@ function populateWorkoutSelector() {
 
 async function changeWorkout(workoutId) {
     if (!selectorReady || !workoutId || parseInt(workoutId) === logData.workout_id) return;
+    if (workoutChanging) {
+        populateWorkoutSelector(); // revert selector to current
+        return;
+    }
 
     try {
+        workoutChanging = true;
         const newWorkoutId = parseInt(workoutId);
 
         // Warn if there are completed sets
@@ -94,6 +100,8 @@ async function changeWorkout(workoutId) {
     } catch (err) {
         showToast(err.message, 'error');
         populateWorkoutSelector(); // Revert selector
+    } finally {
+        workoutChanging = false;
     }
 }
 
