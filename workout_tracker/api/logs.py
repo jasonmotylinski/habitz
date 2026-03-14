@@ -154,6 +154,18 @@ def start_workout():
     db.session.add(log)
     db.session.flush()
 
+    # Purge any orphaned set_logs that survived a previous delete of a log
+    # with this recycled ID (SQLite reuses IDs; ORM cascade may not have fired).
+    stale = SetLog.query.filter_by(workout_log_id=log.id).all()
+    if stale:
+        logger.warning(
+            '[start_workout] purging %d orphaned sets for recycled log_id=%d',
+            len(stale), log.id,
+        )
+        for s in stale:
+            db.session.delete(s)
+        db.session.flush()
+
     # Pre-populate sets from workout template
     workout_exercises = (
         WorkoutExercise.query
