@@ -116,6 +116,16 @@ When a bug is reported and fixed, always add a regression test to the correspond
 
 Run tests with: `venv/bin/python -m pytest tests/test_workout_tracker_api.py -v` (swap filename for the relevant sub-app).
 
+## Budget Tracker (`budget_tracker/`)
+
+**URL prefix:** `/budget/`
+
+**Required env vars** (add to `habitz/habitz/.env`):
+- `GOOGLE_SERVICE_ACCOUNT_JSON` — absolute path to the Google service account key file (copy from budgetz)
+- `GOOGLE_SHEET_ID` — spreadsheet ID from the budgetz Google Sheet URL
+
+The service account JSON file is at `/Users/jason/code/personal/habitz/budget-490711-92178b410d52.json`.
+
 ## Shared Conventions
 
 - **Framework**: Flask with application factory pattern (`create_app()`)

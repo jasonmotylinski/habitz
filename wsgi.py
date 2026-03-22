@@ -1,7 +1,7 @@
 """
 Habitz — unified WSGI entry point.
 
-Mounts all four trackers under sub-paths using Werkzeug's DispatcherMiddleware
+Mounts all sub-apps under sub-paths using Werkzeug's DispatcherMiddleware
 so a single gunicorn process serves everything.
 
 URL map:
@@ -10,6 +10,7 @@ URL map:
   /calories/  → calorie tracker
   /fasting/   → fasting tracker
   /workouts/  → workout tracker
+  /budget/    → budget tracker
 """
 import os
 
@@ -25,6 +26,7 @@ from meal_planner import create_app as create_meal_planner
 from calorie_tracker import create_app as create_calorie_tracker
 from fasting_tracker import create_app as create_fasting_tracker
 from workout_tracker import create_app as create_workout_tracker
+from budget_tracker import create_app as create_budget_tracker
 
 env = os.environ.get('FLASK_ENV', 'production')
 
@@ -33,6 +35,7 @@ meal_planner_app = create_meal_planner(env)
 calorie_tracker_app = create_calorie_tracker(env)
 fasting_tracker_app = create_fasting_tracker(env)
 workout_tracker_app = create_workout_tracker(env)
+budget_tracker_app = create_budget_tracker(env)
 
 # All apps share one session cookie at path '/' so login at the landing app
 # is recognised by every sub-app.  They all use the same SECRET_KEY from .env.
@@ -58,12 +61,14 @@ meal_planner_app.config.update(
 calorie_tracker_app.config.update(**_shared_session)
 fasting_tracker_app.config.update(**_shared_session)
 workout_tracker_app.config.update(**_shared_session)
+budget_tracker_app.config.update(**_shared_session)
 
 application = DispatcherMiddleware(landing_app, {
     '/meals': meal_planner_app,
     '/calories': calorie_tracker_app,
     '/fasting': fasting_tracker_app,
     '/workouts': workout_tracker_app,
+    '/budget': budget_tracker_app,
 })
 
 # Trust X-Forwarded-Proto / X-Forwarded-Host from a reverse proxy (nginx)

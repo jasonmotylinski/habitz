@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f1117">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Budget">
+    <title>Budget — {{ week_label }}</title>
+    <link rel="stylesheet" href="/budget/static/css/budget.css">
+</head>
+<body>
+    <header class="app-header">
+        <div style="display:flex;align-items:center;gap:4px;">
+            <div class="app-switcher" id="appSwitcher">
+                <button class="app-switcher-btn" id="appSwitcherBtn" aria-label="Switch app" aria-expanded="false" type="button">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+                        <rect x="3" y="3" width="8" height="8" rx="1.5"/>
+                        <rect x="13" y="3" width="8" height="8" rx="1.5"/>
+                        <rect x="3" y="13" width="8" height="8" rx="1.5"/>
+                        <rect x="13" y="13" width="8" height="8" rx="1.5"/>
+                    </svg>
+                </button>
+                <div class="app-switcher-menu" role="menu">
+                    <div class="app-switcher-grid">
+                        <a href="/meals/" class="app-tile" role="menuitem" title="Meal Planner">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
+                            <span>Meals</span>
+                        </a>
+                        <a href="/workouts/" class="app-tile" role="menuitem" title="Workout Tracker">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="10" width="4" height="4" rx="1"/><rect x="19" y="10" width="4" height="4" rx="1"/><rect x="5" y="7" width="2" height="10" rx="1"/><rect x="17" y="7" width="2" height="10" rx="1"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
+                            <span>Workouts</span>
+                        </a>
+                        <a href="/calories/" class="app-tile" role="menuitem" title="Calorie Tracker">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4 6"/><circle cx="12" cy="12" r="4" fill="currentColor" opacity="0.5"/></svg>
+                            <span>Calories</span>
+                        </a>
+                        <a href="/fasting/" class="app-tile" role="menuitem" title="Fasting Tracker">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <span>Fasting</span>
+                        </a>
+                        <a href="/budget/" class="app-tile app-tile-current" role="menuitem" title="Budget">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                            <span>Budget</span>
+                        </a>
+                    </div>
+                    <div class="app-switcher-footer">
+                        <a href="/" class="app-switcher-home">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                            <span>Home</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <a href="/budget/" class="brand">budget</a>
+        </div>
+        <div class="header-right">
+            <span class="username">{{ current_user.username or current_user.email }}</span>
+            <a href="/logout" class="logout-link">Log out</a>
+        </div>
+    </header>
+
+    <main class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Week navigation -->
+        <nav class="week-nav" aria-label="Week navigation">
+            {% if prev_week %}
+                <a href="/budget/?week={{ prev_week }}" class="week-nav-btn" aria-label="Previous week">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </a>
+            {% else %}
+                <span class="week-nav-btn disabled" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </span>
+            {% endif %}
+
+            <span class="week-label">{{ week_label }}</span>
+
+            {% if next_week and not is_current_week %}
+                <a href="/budget/?week={{ next_week }}" class="week-nav-btn" aria-label="Next week">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </a>
+            {% else %}
+                <span class="week-nav-btn disabled" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </span>
+            {% endif %}
+        </nav>
+
+        {% if summary %}
+            {% set pct = summary.pct_spent %}
+            {% set status = 'red' if pct >= 100 else ('amber' if pct >= 75 else 'green') %}
+            {% set circumference = 502.65 %}
+            {% set fill_pct = [pct, 100] | min %}
+            {% set dashoffset = circumference * (1 - fill_pct / 100) %}
+
+            <!-- Progress ring -->
+            <section class="budget-ring-section" aria-label="Budget progress">
+                <div class="ring-container">
+                    <svg class="ring-svg" viewBox="0 0 200 200" aria-hidden="true">
+                        <circle class="ring-track" cx="100" cy="100" r="80"/>
+                        <circle class="ring-fill status-{{ status }}"
+                                cx="100" cy="100" r="80"
+                                stroke-dasharray="{{ circumference }}"
+                                stroke-dashoffset="{{ circumference }}"
+                                data-target="{{ dashoffset }}"/>
+                    </svg>
+                    <div class="ring-center">
+                        {% if summary.remaining >= 0 %}
+                            <span class="ring-remaining status-{{ status }}">${{ '%.0f' | format(summary.remaining) }}</span>
+                        {% else %}
+                            <span class="ring-remaining status-red">-${{ '%.0f' | format(summary.remaining | abs) }}</span>
+                        {% endif %}
+                        <span class="ring-remaining-label">remaining</span>
+                    </div>
+                </div>
+
+                <p class="budget-stats">
+                    <strong>${{ '%.2f' | format(summary.total_spent) }}</strong> spent &nbsp;·&nbsp; <strong>${{ '%.0f' | format(summary.budget) }}</strong> budget
+                </p>
+
+                <div class="progress-bar-wrap" role="progressbar" aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar-fill status-{{ status }}" style="width: {{ [pct, 100] | min }}%"></div>
+                </div>
+            </section>
+
+            <!-- Transactions -->
+            <section class="transactions-section">
+                <div class="section-label">This week</div>
+                {% if transactions %}
+                    {% for txn in transactions %}
+                        <div class="transaction-row">
+                            <div class="transaction-info">
+                                <div class="transaction-name">{{ txn.name }}</div>
+                                <div class="transaction-date">{{ txn.date }}</div>
+                            </div>
+                            <div class="transaction-amount">${{ '%.2f' | format(txn.amount | float) }}</div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <p>Nothing tracked yet this week — check back after your first transaction.</p>
+                    </div>
+                {% endif %}
+            </section>
+
+        {% else %}
+            <section class="budget-ring-section">
+                <div class="empty-state">
+                    <p>No data for this week yet.</p>
+                </div>
+            </section>
+        {% endif %}
+    </main>
+
+    <script>
+        // Animate ring fill on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const fill = document.querySelector('.ring-fill');
+            if (fill) {
+                const target = parseFloat(fill.dataset.target);
+                requestAnimationFrame(() => {
+                    fill.style.strokeDashoffset = target;
+                });
+            }
+
+            // App switcher toggle
+            const switcher = document.getElementById('appSwitcher');
+            const btn = document.getElementById('appSwitcherBtn');
+            if (switcher && btn) {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const open = switcher.classList.toggle('open');
+                    btn.setAttribute('aria-expanded', open);
+                });
+                document.addEventListener('click', () => {
+                    switcher.classList.remove('open');
+                    btn.setAttribute('aria-expanded', 'false');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
