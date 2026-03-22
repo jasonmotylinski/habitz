@@ -475,6 +475,47 @@ class TestMicroFastAPI:
         assert isinstance(items, list)
         assert len(items) == 1
 
+    def test_today_micro_fasts_utc_midnight_regression(self, fasting_app, fasting_client):
+        """Micro fasts started near UTC midnight appear in /api/micro/today for the user's local date.
+
+        Regression: func.date(started_at) compared UTC date to local date, causing fasts
+        started after UTC midnight (but before local midnight, e.g. 20:11 NY / 00:11 UTC next day)
+        to disappear from today's list.
+        """
+        from zoneinfo import ZoneInfo
+        from datetime import timezone as dt_timezone
+
+        client, user = fasting_client
+
+        with fasting_app.app_context():
+            from fasting_tracker.models import MicroFast
+            tz = ZoneInfo('America/New_York')
+            # Simulate a fast started at 20:00 NY time = 01:00 UTC next calendar day
+            # e.g. local date is March 21, UTC date is March 22
+            local_8pm = datetime(2026, 3, 21, 20, 0, 0, tzinfo=tz)
+            utc_started = local_8pm.astimezone(dt_timezone.utc).replace(tzinfo=None)
+            utc_ended = utc_started + timedelta(minutes=30)
+
+            mf = MicroFast(
+                user_id=user.id,
+                started_at=utc_started,
+                ended_at=utc_ended,
+            )
+            db.session.add(mf)
+            db.session.commit()
+
+        resp = client.get('/api/micro/today')
+        assert resp.status_code == 200
+        items = resp.get_json()
+        # The fast started at 20:00 NY (March 21) must appear when today_local is March 21
+        ids = [item['id'] for item in items]
+        with fasting_app.app_context():
+            from fasting_tracker.models import MicroFast as MF
+            inserted = MF.query.filter(MF.user_id == user.id, MF.ended_at.isnot(None)).first()
+            assert inserted.id in ids, (
+                "Fast started at 20:00 NY (past UTC midnight) should appear in today's list"
+            )
+
     def test_delete_micro_fast(self, fasting_app, fasting_client):
         """DELETE /api/micro/<id> removes a stopped micro fast."""
         client, user = fasting_client

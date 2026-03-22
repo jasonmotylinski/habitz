@@ -293,11 +293,16 @@ def micro_fast_today():
     from zoneinfo import ZoneInfo
     from datetime import timezone as dt_timezone
     tz = ZoneInfo(current_user.timezone or 'America/New_York')
-    today_local = datetime.now(dt_timezone.utc).astimezone(tz).date()
+    now_local = datetime.now(dt_timezone.utc).astimezone(tz)
+    today_start_local = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end_local = now_local.replace(hour=23, minute=59, second=59, microsecond=999999)
+    today_start_utc = today_start_local.astimezone(dt_timezone.utc).replace(tzinfo=None)
+    today_end_utc = today_end_local.astimezone(dt_timezone.utc).replace(tzinfo=None)
 
     records = MicroFast.query.filter(
         MicroFast.user_id == current_user.id,
-        func.date(MicroFast.started_at) == today_local,
+        MicroFast.started_at >= today_start_utc,
+        MicroFast.started_at <= today_end_utc,
     ).order_by(MicroFast.started_at.asc()).all()
 
     return jsonify([mf.to_dict() for mf in records])
