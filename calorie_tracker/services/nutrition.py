@@ -121,6 +121,8 @@ def _search_local(words, offset, page_size):
     fts_q = _fts_query(words)
     if fts_q:
         try:
+            first_word = words[0].lower()
+            first_stem = _stem(words[0])
             rows = db.session.execute(text("""
                 SELECT food_id
                 FROM usda_food_fts
@@ -132,9 +134,30 @@ def _search_local(words, offset, page_size):
                         WHEN 'restaurant' THEN 2
                         ELSE 3
                     END,
+                    CASE
+                        WHEN lower(name) = :first_word
+                          OR lower(name) = :first_stem          THEN 0
+                        WHEN name LIKE :comma_word
+                          OR name LIKE :comma_stem
+                          OR name LIKE :comma_stems             THEN 1
+                        WHEN name LIKE :space_word
+                          OR name LIKE :space_stem              THEN 2
+                        ELSE                                         3
+                    END,
                     rank
                 LIMIT :limit OFFSET :offset
-            """), {'q': fts_q, 'limit': page_size, 'offset': offset}).fetchall()
+            """), {
+                'q': fts_q,
+                'first_word': first_word,
+                'first_stem': first_stem,
+                'comma_word':  first_word + ',%',
+                'comma_stem':  first_stem + ',%',
+                'comma_stems': first_stem + 's,%',
+                'space_word':  first_word + ' %',
+                'space_stem':  first_stem + ' %',
+                'limit': page_size,
+                'offset': offset,
+            }).fetchall()
 
             food_ids = [r[0] for r in rows]
             if food_ids:

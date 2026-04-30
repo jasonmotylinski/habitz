@@ -1,7 +1,8 @@
 """Tests for calorie tracker API endpoints."""
 import pytest
 from datetime import date
-from calorie_tracker.models import FoodItem, FoodLog
+from calorie_tracker.models import FoodItem, FoodLog, UsdaFood
+from calorie_tracker.services.nutrition import _search_local_ilike
 from shared import db
 from shared.user import User
 
@@ -46,6 +47,26 @@ class TestFoodSearch:
             # Search would happen via API, here we verify the items exist
             bananas = FoodItem.query.filter(FoodItem.name.ilike('%banana%')).all()
             assert len(bananas) == 2
+
+    def test_exact_match_ranks_before_compound(self, app):
+        """Regression: searching 'egg' should rank 'Egg' before 'Egg Bread Roll'."""
+        with app.app_context():
+            foods = [
+                UsdaFood(food_id='t1', name='Egg Bread Roll', food_type='everyday', calories=120),
+                UsdaFood(food_id='t2', name='Egg',            food_type='everyday', calories=78),
+                UsdaFood(food_id='t3', name='Eggs',           food_type='everyday', calories=78),
+            ]
+            for f in foods:
+                db.session.merge(f)
+            db.session.commit()
+
+            results = _search_local_ilike(['egg'], offset=0, page_size=20)
+            names = [r['name'] for r in results]
+            egg_idx       = next(i for i, n in enumerate(names) if n in ('Egg', 'Eggs'))
+            compound_idx  = next(i for i, n in enumerate(names) if n == 'Egg Bread Roll')
+            assert egg_idx < compound_idx, (
+                f"'Egg'/'Eggs' should rank before 'Egg Bread Roll', got order: {names}"
+            )
 
     def test_food_item_to_dict(self, food_item):
         """Test food item serialization."""
