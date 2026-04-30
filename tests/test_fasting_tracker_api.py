@@ -490,9 +490,11 @@ class TestMicroFastAPI:
         with fasting_app.app_context():
             from fasting_tracker.models import MicroFast
             tz = ZoneInfo('America/New_York')
-            # Simulate a fast started at 20:00 NY time = 01:00 UTC next calendar day
-            # e.g. local date is March 21, UTC date is March 22
-            local_8pm = datetime(2026, 3, 21, 20, 0, 0, tzinfo=tz)
+            # Use today's NY date so the fast is always within today's window.
+            # 20:00 NY crosses UTC midnight (EDT=UTC-4, EST=UTC-5), which is the
+            # regression case: UTC date is tomorrow but NY date is still today.
+            today_ny = datetime.now(dt_timezone.utc).astimezone(tz).date()
+            local_8pm = datetime(today_ny.year, today_ny.month, today_ny.day, 20, 0, 0, tzinfo=tz)
             utc_started = local_8pm.astimezone(dt_timezone.utc).replace(tzinfo=None)
             utc_ended = utc_started + timedelta(minutes=30)
 
@@ -507,7 +509,7 @@ class TestMicroFastAPI:
         resp = client.get('/api/micro/today')
         assert resp.status_code == 200
         items = resp.get_json()
-        # The fast started at 20:00 NY (March 21) must appear when today_local is March 21
+        # The fast started at 20:00 NY must appear in today's list regardless of UTC date
         ids = [item['id'] for item in items]
         with fasting_app.app_context():
             from fasting_tracker.models import MicroFast as MF
