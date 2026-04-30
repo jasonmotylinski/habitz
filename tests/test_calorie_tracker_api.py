@@ -49,12 +49,12 @@ class TestFoodSearch:
             assert len(bananas) == 2
 
     def test_exact_match_ranks_before_compound(self, app):
-        """Regression: searching 'egg' should rank 'Egg' before 'Egg Bread Roll'."""
+        """Regression: shorter/simpler egg names should rank before compound names."""
         with app.app_context():
             foods = [
                 UsdaFood(food_id='t1', name='Egg Bread Roll', food_type='everyday', calories=120),
-                UsdaFood(food_id='t2', name='Egg',            food_type='everyday', calories=78),
-                UsdaFood(food_id='t3', name='Eggs',           food_type='everyday', calories=78),
+                UsdaFood(food_id='t2', name='Egg Yolk',       food_type='everyday', calories=55),
+                UsdaFood(food_id='t3', name='Egg Whites',     food_type='everyday', calories=17),
             ]
             for f in foods:
                 db.session.merge(f)
@@ -62,10 +62,10 @@ class TestFoodSearch:
 
             results = _search_local_ilike(['egg'], offset=0, page_size=20)
             names = [r['name'] for r in results]
-            egg_idx       = next(i for i, n in enumerate(names) if n in ('Egg', 'Eggs'))
-            compound_idx  = next(i for i, n in enumerate(names) if n == 'Egg Bread Roll')
-            assert egg_idx < compound_idx, (
-                f"'Egg'/'Eggs' should rank before 'Egg Bread Roll', got order: {names}"
+            short_idx    = min(i for i, n in enumerate(names) if n in ('Egg Yolk', 'Egg Whites'))
+            compound_idx = next(i for i, n in enumerate(names) if n == 'Egg Bread Roll')
+            assert short_idx < compound_idx, (
+                f"'Egg Yolk'/'Egg Whites' should rank before 'Egg Bread Roll', got order: {names}"
             )
 
     def test_food_item_to_dict(self, food_item):

@@ -144,6 +144,7 @@ def _search_local(words, offset, page_size):
                           OR name LIKE :space_stem              THEN 2
                         ELSE                                         3
                     END,
+                    length(name),
                     rank
                 LIMIT :limit OFFSET :offset
             """), {
@@ -214,7 +215,7 @@ def _search_local_ilike(words, offset, page_size):
     q = UsdaFood.query
     for word in words:
         q = q.filter(word_filter(word))
-    foods = q.order_by(type_rank, name_rank, UsdaFood.name).offset(offset).limit(page_size).all()
+    foods = q.order_by(type_rank, name_rank, sa.func.length(UsdaFood.name), UsdaFood.name).offset(offset).limit(page_size).all()
     return [f.to_search_result() for f in foods]
 
 
