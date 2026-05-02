@@ -1,5 +1,7 @@
 import calendar
+import os
 from datetime import datetime, timedelta
+from functools import wraps
 
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
@@ -9,6 +11,19 @@ from .models import Fast, MicroFast, db
 from .services.stats import get_daily_progress, get_monthly_progress
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
+
+
+def _require_api_key(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        key = os.environ.get('HABITZ_API_KEY')
+        if not key:
+            return jsonify({'error': 'API key not configured on server'}), 503
+        provided = request.headers.get('X-API-Key') or request.args.get('token')
+        if provided != key:
+            return jsonify({'error': 'Unauthorized'}), 401
+        return f(*args, **kwargs)
+    return decorated
 
 
 @api_bp.route('/fast/start', methods=['POST'])
@@ -390,3 +405,45 @@ def update_micro_goal():
         except (ValueError, TypeError):
             return jsonify({'error': 'Invalid default_micro_fast_minutes'}), 400
     return jsonify(current_user.to_dict())
+
+
+# ── Public API (token-gated, no session required) ─────────────────────────────
+
+@api_bp.route('/public/fast/active')
+@_require_api_key
+def public_active_fast():
+    from shared import User
+    user = User.query.first()
+    if not user:
+        return jsonify(None)
+    active = Fast.query.filter_by(user_id=user.id, ended_at=None).first()
+    if not active:
+        return jsonify(None)
+    now = datetime.utcnow()
+    elapsed = (now - active.started_at).total_seconds()
+    remaining = max(0, active.target_seconds - elapsed)
+    data = active.to_dict()
+    data['elapsed_seconds'] = int(elapsed)
+    data['remaining_seconds'] = int(remaining)
+    data['progress_pct'] = round(active.progress_pct, 1)
+    return jsonify(data)
+
+
+@api_bp.route('/public/micro/active')
+@_require_api_key
+def public_active_micro_fast():
+    from shared import User
+    user = User.query.first()
+    if not user:
+        return jsonify(None)
+    active = MicroFast.query.filter_by(user_id=user.id, ended_at=None).first()
+    if not active:
+        return jsonify(None)
+    now = datetime.utcnow()
+    elapsed = (now - active.started_at).total_seconds()
+    remaining = max(0, active.target_seconds - elapsed)
+    data = active.to_dict()
+    data['elapsed_seconds'] = int(elapsed)
+    data['remaining_seconds'] = int(remaining)
+    data['progress_pct'] = round(active.progress_pct, 1)
+    return jsonify(data)
