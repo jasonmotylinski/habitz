@@ -30,6 +30,7 @@
 </div>
 
 <div class="timer-bar">
+    <span class="time" id="rest-time" style="display: none;">Rest 0:00</span>
     <button class="btn btn-success" onclick="finishWorkout()" style="margin-left: auto;">Finish Workout</button>
 </div>
 {% endblock %}
@@ -188,6 +189,24 @@ function renderExercises() {
     }
 }
 
+let restTimerInterval = null;
+let restTimerStartedAt = null;
+
+function startRestTimer() {
+    restTimerStartedAt = Date.now();
+    const el = document.getElementById('rest-time');
+    el.style.display = '';
+    const tick = () => {
+        const secs = Math.floor((Date.now() - restTimerStartedAt) / 1000);
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        el.textContent = `Rest ${m}:${s.toString().padStart(2, '0')}`;
+    };
+    tick();
+    if (restTimerInterval) clearInterval(restTimerInterval);
+    restTimerInterval = setInterval(tick, 1000);
+}
+
 async function toggleSet(setId, plannedReps) {
     const set = logData.sets.find(s => s.id === setId);
     if (!set) return;
@@ -196,6 +215,7 @@ async function toggleSet(setId, plannedReps) {
         // First tap: mark complete with full reps
         set.completed = true;
         set.actual_reps = plannedReps;
+        startRestTimer();
     } else if (set.actual_reps > 0) {
         // Subsequent taps: decrement
         set.actual_reps--;
