@@ -15,11 +15,19 @@
     </div>
 </div>
 
+<div id="chart-section" class="hidden mb-4">
+    <div class="card">
+        <div class="card-title">Progress</div>
+        <canvas id="progress-chart" style="max-height: 220px;"></canvas>
+    </div>
+</div>
+
 <div class="card-title">History</div>
 <div id="progress-history"></div>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
 const exerciseId = {{ exercise_id }};
 
@@ -74,6 +82,69 @@ async function loadProgress() {
                         </div>
                     </div>
                 `;
+            }
+        }
+
+        // Build progress chart
+        const chartSection = document.getElementById('chart-section');
+        if (data.history && data.history.length > 1) {
+            const chronological = [...data.history].reverse();
+            let labels, values, yLabel;
+
+            if (data.exercise.type === 'strength') {
+                labels = chronological.map(s => {
+                    const d = new Date(s.date);
+                    return `${d.getMonth()+1}/${d.getDate()}`;
+                });
+                values = chronological.map(s => {
+                    const weights = s.sets.filter(x => x.completed && x.weight).map(x => x.weight);
+                    return weights.length ? Math.max(...weights) : null;
+                });
+                yLabel = 'Max Weight (lb)';
+            } else {
+                labels = chronological.map(s => {
+                    const d = new Date(s.date);
+                    return `${d.getMonth()+1}/${d.getDate()}`;
+                });
+                values = chronological.map(s => {
+                    const durations = s.sets.filter(x => x.completed && x.duration_minutes).map(x => x.duration_minutes);
+                    return durations.length ? Math.max(...durations) : null;
+                });
+                yLabel = 'Duration (min)';
+            }
+
+            const hasData = values.some(v => v !== null);
+            if (hasData) {
+                chartSection.classList.remove('hidden');
+                const ctx = document.getElementById('progress-chart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: yLabel,
+                            data: values,
+                            borderColor: 'var(--accent, #4f8ef7)',
+                            backgroundColor: 'rgba(79,142,247,0.1)',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointBackgroundColor: 'var(--accent, #4f8ef7)',
+                            tension: 0.3,
+                            spanGaps: true,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => `${ctx.parsed.y} ${yLabel.split(' ')[0] === 'Max' ? 'lb' : 'min'}` } }
+                        },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },
+                            y: { beginAtZero: false, grid: { color: 'rgba(128,128,128,0.15)' } }
+                        }
+                    }
+                });
             }
         }
 
