@@ -694,16 +694,43 @@ select.form-control {
     display: flex;
 }
 
+.history-exercise-progress {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+    line-height: 1;
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.history-exercise-progress:hover {
+    color: var(--accent);
+    background: var(--accent-dim, rgba(99,179,237,0.12));
+}
+
 .history-exercise-delete {
     background: none;
     border: none;
     color: var(--text-muted);
-    font-size: 1rem;
+    font-size: 1.25rem;
     cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 4px;
+    padding: 6px 10px;
+    border-radius: 6px;
     transition: color 0.15s, background 0.15s;
     line-height: 1;
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .history-exercise-delete:hover {
