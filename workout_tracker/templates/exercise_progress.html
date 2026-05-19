@@ -117,6 +117,7 @@ async function loadProgress() {
             if (hasData) {
                 chartSection.classList.remove('hidden');
                 const ctx = document.getElementById('progress-chart').getContext('2d');
+                const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4a9eff';
                 new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -124,11 +125,11 @@ async function loadProgress() {
                         datasets: [{
                             label: yLabel,
                             data: values,
-                            borderColor: 'var(--accent, #4f8ef7)',
-                            backgroundColor: 'rgba(79,142,247,0.1)',
+                            borderColor: accentColor,
+                            backgroundColor: 'rgba(74,158,255,0.1)',
                             borderWidth: 2,
                             pointRadius: 4,
-                            pointBackgroundColor: 'var(--accent, #4f8ef7)',
+                            pointBackgroundColor: accentColor,
                             tension: 0.3,
                             spanGaps: true,
                         }]
