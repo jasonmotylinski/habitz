@@ -271,6 +271,14 @@ def update_log(log_id):
                     )
                     db.session.add(set_log)
 
+    if "started_at" in data:
+        try:
+            new_date = datetime.fromisoformat(data["started_at"].replace("Z", "+00:00"))
+            log.started_at = new_date
+            if log.completed_at:
+                log.completed_at = new_date
+        except ValueError:
+            return jsonify({"error": "Invalid date format"}), 400
     if "notes" in data:
         log.notes = data["notes"]
     if "body_weight" in data:

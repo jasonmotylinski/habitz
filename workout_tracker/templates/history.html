@@ -223,6 +223,7 @@ function renderHistoryList() {
                 </div>
                 ${exerciseRows}
                 <div class="history-delete-workout">
+                    <button class="history-change-date-btn" onclick="event.stopPropagation(); changeWorkoutDate(${log.id}, '${log.started_at}')">Change Date</button>
                     <button class="history-delete-workout-btn" onclick="event.stopPropagation(); deleteWorkout(${log.id})">Delete Workout</button>
                 </div>
             </div>
@@ -231,6 +232,37 @@ function renderHistoryList() {
 }
 
 let editingSet = null;
+
+async function changeWorkoutDate(logId, currentStartedAt) {
+    const current = currentStartedAt.split('T')[0];
+    const modal = document.getElementById('edit-modal');
+    const body = document.getElementById('edit-modal-body');
+    body.innerHTML = `
+        <h3 style="margin-bottom: 1rem;">Change Workout Date</h3>
+        <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" id="change-date-input" class="form-control" value="${current}">
+        </div>
+        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+            <button class="btn btn-primary" onclick="saveWorkoutDate(${logId})">Save</button>
+            <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+        </div>
+    `;
+    modal.classList.remove('hidden');
+}
+
+async function saveWorkoutDate(logId) {
+    const dateVal = document.getElementById('change-date-input').value;
+    if (!dateVal) return;
+    try {
+        await api.put(`/api/logs/${logId}`, { started_at: dateVal + 'T12:00:00Z' });
+        showToast('Date updated', 'success');
+        closeEditModal();
+        loadHistory();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
 
 async function deleteWorkout(logId) {
     if (await showConfirm('Delete this workout?', 'Delete', 'btn-danger')) {

@@ -746,7 +746,9 @@ select.form-control {
 }
 
 .history-entry.expanded .history-delete-workout {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .history-delete-workout-btn {
@@ -761,6 +763,21 @@ select.form-control {
 }
 
 .history-delete-workout-btn:hover {
+    opacity: 0.8;
+}
+
+.history-change-date-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 4px 8px 4px 0;
+    transition: opacity 0.15s;
+}
+
+.history-change-date-btn:hover {
     opacity: 0.8;
 }
 
