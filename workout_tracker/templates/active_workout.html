@@ -31,7 +31,7 @@
 
 <div class="timer-bar">
     <span class="time" id="rest-time" style="display: none;">Rest 0:00</span>
-    <button class="btn btn-success" onclick="finishWorkout()" style="margin-left: auto;">Finish Workout</button>
+    <button class="btn btn-success" onclick="confirmFinishWorkout()" style="margin-left: auto;">Finish Workout</button>
 </div>
 {% endblock %}
 
@@ -251,6 +251,11 @@ async function updateCardioSet(setId, minutes) {
     });
 }
 
+
+function confirmFinishWorkout() {
+    if (!confirm('Finish workout? This will end your session.')) return;
+    finishWorkout();
+}
 
 async function finishWorkout() {
     const notes = document.getElementById('notes').value.trim();
