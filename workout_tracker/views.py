@@ -50,3 +50,9 @@ def history():
 @login_required
 def exercise_progress(exercise_id):
     return render_template("exercise_progress.html", exercise_id=exercise_id)
+
+
+@views_bp.route("/plate-calculator")
+@login_required
+def plate_calculator():
+    return render_template("plate_calculator.html")

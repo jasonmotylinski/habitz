@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% block title %}Plate Calculator{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Plate Calculator</h1>
+    <span class="text-muted text-sm">Standard 45 lb barbell</span>
+</div>
+
+<div class="card mb-3">
+    <div class="form-group mb-3">
+        <label class="form-label" for="targetWeight">Target weight (lbs)</label>
+        <input type="number" id="targetWeight" class="form-control"
+               placeholder="135" min="45" max="1000" step="2.5"
+               inputmode="decimal" autocomplete="off">
+    </div>
+    <div class="quick-row">
+        <button class="btn btn-ghost btn-sm" onclick="setWeight(95)">95</button>
+        <button class="btn btn-ghost btn-sm" onclick="setWeight(135)">135</button>
+        <button class="btn btn-ghost btn-sm" onclick="setWeight(155)">155</button>
+        <button class="btn btn-ghost btn-sm" onclick="setWeight(185)">185</button>
+        <button class="btn btn-ghost btn-sm" onclick="setWeight(225)">225</button>
+        <button class="btn btn-ghost btn-sm" onclick="setWeight(275)">275</button>
+        <button class="btn btn-ghost btn-sm" onclick="setWeight(315)">315</button>
+        <button class="btn btn-ghost btn-sm" onclick="setWeight(365)">365</button>
+    </div>
+</div>
+
+<div id="errorCard" class="card mb-3 hidden" style="border-color: var(--danger-dim); background: var(--danger-dim);">
+    <p id="errorMsg" class="text-sm" style="color: var(--danger);"></p>
+</div>
+
+<div id="result" class="hidden">
+    <div class="card mb-3">
+        <div class="barbell-wrap" id="barbellWrap" aria-label="Barbell diagram"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+            <span class="text-muted text-sm">Total</span>
+            <span id="totalLabel" style="font-size:1.5rem; font-weight:700; color:var(--accent);"></span>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-title mb-2">Per side</div>
+        <div id="plateBreakdown" class="list-group"></div>
+        <div class="list-item" style="border-top:1px solid var(--border); margin-top:4px; padding-top:12px;">
+            <span class="text-muted text-sm">Each side total</span>
+            <span id="perSideLabel" style="font-weight:700; color:var(--text-primary);"></span>
+        </div>
+    </div>
+
+    <div class="card" id="barbellInfoCard">
+        <div class="list-item" style="padding:8px 0;">
+            <span class="text-muted text-sm">Bar weight</span>
+            <span class="text-sm">45 lbs</span>
+        </div>
+        <div class="list-item" style="padding:8px 0;">
+            <span class="text-muted text-sm">Weight per side</span>
+            <span id="perSideRaw" class="text-sm"></span>
+        </div>
+    </div>
+</div>
+
+<style>
+.quick-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.quick-row .btn-sm {
+    min-width: 44px;
+    flex: 0 0 auto;
+}
+
+/* Barbell visual */
+.barbell-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-x: auto;
+    padding: 16px 0 8px;
+    gap: 0;
+}
+
+.bar-sleeve {
+    width: 32px;
+    height: 18px;
+    background: var(--text-secondary);
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.bar-center {
+    height: 10px;
+    min-width: 80px;
+    background: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.plates-side {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.plates-side.left {
+    flex-direction: row-reverse;
+}
+
+.plate {
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    writing-mode: vertical-rl;
+    font-size: 9px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 0.3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+/* Plate size by weight */
+.plate-45  { width: 18px; height: 80px; background: #ef4444; }
+.plate-35  { width: 16px; height: 68px; background: #f59e0b; }
+.plate-25  { width: 14px; height: 58px; background: #22c55e; }
+.plate-10  { width: 10px; height: 46px; background: #cbd5e1; color: #334155; }
+.plate-5   { width: 9px;  height: 38px; background: #4a9eff; }
+.plate-2p5 { width: 7px;  height: 30px; background: #6b7280; font-size:7px; }
+
+/* Plate chip in breakdown list */
+.plate-chip {
+    display: inline-block;
+    width: 12px;
+    height: 22px;
+    border-radius: 3px;
+    vertical-align: middle;
+    margin-right: 6px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const BAR_WEIGHT = 45;
+const PLATES = [45, 35, 25, 10, 5, 2.5];
+
+const PLATE_COLORS = {
+    45:  '#ef4444',
+    35:  '#f59e0b',
+    25:  '#22c55e',
+    10:  '#cbd5e1',
+    5:   '#4a9eff',
+    2.5: '#6b7280',
+};
+
+const PLATE_CLASS = {
+    45:  'plate-45',
+    35:  'plate-35',
+    25:  'plate-25',
+    10:  'plate-10',
+    5:   'plate-5',
+    2.5: 'plate-2p5',
+};
+
+function setWeight(w) {
+    document.getElementById('targetWeight').value = w;
+    calculate(w);
+}
+
+function calcPlates(sideWeight) {
+    const result = [];
+    let remaining = sideWeight;
+    for (const p of PLATES) {
+        const count = Math.floor(remaining / p + 0.001);
+        if (count > 0) {
+            result.push({ weight: p, count });
+            remaining = Math.round((remaining - p * count) * 1000) / 1000;
+        }
+    }
+    return result;
+}
+
+function calculate(targetRaw) {
+    const target = typeof targetRaw === 'number' ? targetRaw : parseFloat(targetRaw);
+    const errorCard = document.getElementById('errorCard');
+    const errorMsg = document.getElementById('errorMsg');
+    const result = document.getElementById('result');
+
+    if (isNaN(target) || target === 0) {
+        errorCard.classList.add('hidden');
+        result.classList.add('hidden');
+        return;
+    }
+
+    if (target < BAR_WEIGHT) {
+        errorMsg.textContent = `Minimum is ${BAR_WEIGHT} lbs — that's just the bar.`;
+        errorCard.classList.remove('hidden');
+        result.classList.add('hidden');
+        return;
+    }
+
+    const sideLift = (target - BAR_WEIGHT) / 2;
+    const remainder = Math.round((sideLift % 2.5) * 1000) / 1000;
+
+    if (remainder !== 0) {
+        errorMsg.textContent = `${target} lbs isn't achievable with standard plates. Try ${Math.floor(target / 2.5) * 2.5} or ${Math.ceil(target / 2.5) * 2.5} lbs.`;
+        errorCard.classList.remove('hidden');
+        result.classList.add('hidden');
+        return;
+    }
+
+    errorCard.classList.add('hidden');
+
+    const plates = calcPlates(sideLift);
+
+    // Update totals
+    document.getElementById('totalLabel').textContent = `${target} lbs`;
+    document.getElementById('perSideLabel').textContent = `${sideLift} lbs`;
+    document.getElementById('perSideRaw').textContent = `${sideLift} lbs`;
+
+    // Plate breakdown list
+    const breakdown = document.getElementById('plateBreakdown');
+    if (plates.length === 0) {
+        breakdown.innerHTML = '<div class="list-item"><span class="text-muted text-sm">No plates needed — just the bar</span></div>';
+    } else {
+        breakdown.innerHTML = plates.map(({ weight, count }) => {
+            const color = PLATE_COLORS[weight];
+            return `
+            <div class="list-item">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="plate-chip" style="background:${color};"></span>
+                    <span>${weight} lb plate${count > 1 ? 's' : ''}</span>
+                </div>
+                <span style="font-weight:700;">× ${count}</span>
+            </div>`;
+        }).join('');
+    }
+
+    // Barbell visual
+    renderBarbell(plates);
+
+    result.classList.remove('hidden');
+}
+
+function renderBarbell(plates) {
+    const wrap = document.getElementById('barbellWrap');
+
+    // Flatten plates array into individual plate elements
+    const plateEls = plates.flatMap(({ weight, count }) =>
+        Array(count).fill(weight)
+    );
+
+    const makeplate = (w) => {
+        const cls = PLATE_CLASS[w];
+        const label = w === 2.5 ? '2.5' : String(w);
+        return `<div class="plate ${cls}" title="${w} lbs">${label}</div>`;
+    };
+
+    // Left side: closest to bar first (largest), then outward
+    const leftHtml = `<div class="plates-side left">${plateEls.map(makeplate).join('')}</div>`;
+    // Right side: same order left-to-right (bar-out)
+    const rightHtml = `<div class="plates-side right">${plateEls.map(makeplate).join('')}</div>`;
+
+    wrap.innerHTML = `
+        ${leftHtml}
+        <div class="bar-sleeve"></div>
+        <div class="bar-center"></div>
+        <div class="bar-sleeve"></div>
+        ${rightHtml}
+    `;
+}
+
+// Wire input
+document.getElementById('targetWeight').addEventListener('input', function () {
+    calculate(this.value);
+});
+</script>
+{% endblock %}
