@@ -71,15 +71,13 @@ async function loadHome() {
                         <button class="btn btn-success" onclick="window.location.href=SCRIPT_ROOT+'/workout/${inProgressLogId}/active'">Resume</button>
                     </div>
                 `;
-            } else if (isToday) {
+            } else {
                 startButton = `
                     <div class="start-bar">
                         <span class="meta">${exercises.length} exercises</span>
-                        <button class="btn btn-success" onclick="startWorkout(${workout.id}, ${program.id})">Start</button>
+                        <button class="btn ${isToday ? 'btn-success' : 'btn-secondary'}" onclick="startWorkout(${workout.id}, ${program.id})">Start</button>
                     </div>
                 `;
-            } else {
-                startButton = '';
             }
 
             card.innerHTML = `
