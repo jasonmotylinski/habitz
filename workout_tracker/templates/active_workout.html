@@ -133,7 +133,7 @@ function renderExercises() {
                 <div class="exercise-block-header">
                     <h3>${ex.name}</h3>
                     <span class="detail">Cardio</span>
-                    <a href="${SCRIPT_ROOT}/exercises/${exId}/progress" class="chart-link" title="View progress">📈</a>
+                    <a href="${SCRIPT_ROOT}/exercises/${exId}/progress?from=active" class="chart-link" title="View progress">📈</a>
                 </div>
                 <div class="cardio-input">
                     <input type="number" class="form-control" value="${set.duration_minutes || 30}"
@@ -157,7 +157,7 @@ function renderExercises() {
                 <div class="exercise-block-header">
                     <h3>${ex.name}</h3>
                     <span class="detail">${setsCount}×${reps}</span>
-                    <a href="${SCRIPT_ROOT}/exercises/${exId}/progress" class="chart-link" title="View progress">📈</a>
+                    <a href="${SCRIPT_ROOT}/exercises/${exId}/progress?from=active" class="chart-link" title="View progress">📈</a>
                 </div>
                 <div class="weight-row">
                     <label class="weight-label">Weight</label>

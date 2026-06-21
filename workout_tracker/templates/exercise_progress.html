@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="page-header">
-    <button class="back-btn" onclick="window.location.href=SCRIPT_ROOT+'/history'">‹ History</button>
+    <button class="back-btn" onclick="goBack()">‹ Back</button>
     <h1 id="exercise-name" style="font-size: 1.1rem;"></h1>
 </div>
 
@@ -30,6 +30,15 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
 const exerciseId = {{ exercise_id }};
+
+function goBack() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('from') === 'active') {
+        window.history.back();
+    } else {
+        window.location.href = SCRIPT_ROOT + '/history';
+    }
+}
 
 async function loadProgress() {
     try {
