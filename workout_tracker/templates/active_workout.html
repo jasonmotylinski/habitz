@@ -286,5 +286,17 @@ async function confirmExit() {
 }
 
 loadLog();
+
+// Fix timer-bar position when iOS keyboard appears/disappears
+if (window.visualViewport) {
+    const timerBar = document.querySelector('.timer-bar');
+    function repositionBar() {
+        const vv = window.visualViewport;
+        const keyboardOffset = window.innerHeight - vv.height - vv.offsetTop;
+        timerBar.style.bottom = Math.max(0, keyboardOffset) + 'px';
+    }
+    window.visualViewport.addEventListener('resize', repositionBar);
+    window.visualViewport.addEventListener('scroll', repositionBar);
+}
 </script>
 {% endblock %}

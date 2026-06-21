@@ -582,6 +582,8 @@ select.form-control {
     justify-content: space-between;
     align-items: center;
     z-index: 99;
+    transform: translateZ(0);
+    will-change: bottom;
 }
 
 .timer-bar .time {
