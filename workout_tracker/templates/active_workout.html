@@ -193,9 +193,15 @@ function renderExercises() {
 
 let restTimerInterval = null;
 let restTimerStartedAt = null;
+const TIMER_KEY = `habitz_rest_timer_${logId}`;
 
 function startRestTimer() {
     restTimerStartedAt = Date.now();
+    localStorage.setItem(TIMER_KEY, restTimerStartedAt);
+    _runRestTimer();
+}
+
+function _runRestTimer() {
     const el = document.getElementById('rest-time');
     el.style.display = '';
     const tick = () => {
@@ -207,6 +213,13 @@ function startRestTimer() {
     tick();
     if (restTimerInterval) clearInterval(restTimerInterval);
     restTimerInterval = setInterval(tick, 1000);
+}
+
+// Restore timer if we navigated away mid-rest
+const savedTimer = localStorage.getItem(TIMER_KEY);
+if (savedTimer) {
+    restTimerStartedAt = parseInt(savedTimer, 10);
+    _runRestTimer();
 }
 
 async function toggleSet(setId, plannedReps) {
@@ -266,6 +279,7 @@ async function finishWorkout() {
     if (bw) payload.body_weight = parseFloat(bw);
 
     await api.put(`/api/logs/${logId}`, payload);
+    localStorage.removeItem(TIMER_KEY);
     showToast('Workout complete!', 'success');
     setTimeout(() => window.location.href = SCRIPT_ROOT + '/', 1000);
 }
