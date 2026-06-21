@@ -51,7 +51,7 @@ async function checkPlateaus(sets) {
     const results = await Promise.all(strengthIds.map(async exId => {
         try {
             const data = await api.get(`/api/exercises/${exId}/progress`);
-            const history = (data.history || []).slice(0, 3);
+            const history = (data.history || []).filter(s => s.log_id !== logId).slice(0, 3);
             const weights = history.map(session => {
                 const done = session.sets.filter(s => s.completed && s.weight != null);
                 return done.length ? Math.max(...done.map(s => s.weight)) : null;
