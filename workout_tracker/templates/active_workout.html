@@ -189,7 +189,7 @@ function renderExercises() {
                            onchange="updateExerciseWeight(${exId}, this.value)">
                     <span class="weight-unit">lb</span>
                 </div>
-                ${plateauExercises.has(exId) ? `<div class="plateau-nudge">⬆ Same weight 3 sessions in a row — time to bump it!</div>` : ''}
+                ${plateauExercises.has(exId) ? `<div class="plateau-nudge">⬆</div>` : ''}
                 <div class="sets-row">
                     ${ex.sets.map(set => {
                         let cls = '';
