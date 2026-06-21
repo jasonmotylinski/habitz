@@ -558,6 +558,13 @@ select.form-control {
     color: var(--text-secondary);
 }
 
+.plateau-nudge {
+    font-size: 0.8rem;
+    color: var(--accent);
+    margin-top: 4px;
+    padding: 4px 0;
+}
+
 .cardio-input {
     display: flex;
     align-items: center;

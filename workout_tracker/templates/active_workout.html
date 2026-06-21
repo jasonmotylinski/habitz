@@ -42,6 +42,28 @@ let logData = null;
 let allWorkouts = [];
 let selectorReady = false;
 let workoutChanging = false;
+let plateauExercises = new Set();
+
+async function checkPlateaus(sets) {
+    const strengthIds = [...new Set(
+        sets.filter(s => s.exercise_type === 'strength').map(s => s.exercise_id)
+    )];
+    const results = await Promise.all(strengthIds.map(async exId => {
+        try {
+            const data = await api.get(`/api/exercises/${exId}/progress`);
+            const history = (data.history || []).slice(0, 3);
+            const weights = history.map(session => {
+                const done = session.sets.filter(s => s.completed && s.weight != null);
+                return done.length ? Math.max(...done.map(s => s.weight)) : null;
+            }).filter(w => w !== null);
+            if (weights.length >= 3 && weights[0] === weights[1] && weights[1] === weights[2]) {
+                return exId;
+            }
+        } catch (e) {}
+        return null;
+    }));
+    return new Set(results.filter(Boolean));
+}
 
 async function loadLog() {
     logData = await api.get(`/api/logs/${logId}`);
@@ -61,6 +83,7 @@ async function loadLog() {
     populateWorkoutSelector();
     selectorReady = true;
 
+    plateauExercises = await checkPlateaus(logData.sets || []);
     renderExercises();
 }
 
@@ -166,6 +189,7 @@ function renderExercises() {
                            onchange="updateExerciseWeight(${exId}, this.value)">
                     <span class="weight-unit">lb</span>
                 </div>
+                ${plateauExercises.has(exId) ? `<div class="plateau-nudge">⬆ Same weight 3 sessions in a row — time to bump it!</div>` : ''}
                 <div class="sets-row">
                     ${ex.sets.map(set => {
                         let cls = '';
