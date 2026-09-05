@@ -51,12 +51,17 @@ async function checkPlateaus(sets) {
     const results = await Promise.all(strengthIds.map(async exId => {
         try {
             const data = await api.get(`/api/exercises/${exId}/progress`);
-            const history = (data.history || []).filter(s => s.log_id !== logId).slice(0, 3);
-            const weights = history.map(session => {
-                const done = session.sets.filter(s => s.completed && s.weight != null);
-                return done.length ? Math.max(...done.map(s => s.weight)) : null;
-            }).filter(w => w !== null);
-            if (weights.length >= 3 && weights[0] === weights[1] && weights[1] === weights[2]) {
+            // Most recent 3 sessions (excluding this workout) with a top weight.
+            // Bump only when the same top weight was used 3 sessions in a row
+            // AND the planned reps were hit at that weight every time
+            // (hit_reps_target, computed server-side from planned/actual reps).
+            const history = (data.history || [])
+                .filter(s => s.log_id !== logId && s.top_weight != null)
+                .slice(0, 3);
+            if (history.length >= 3
+                && history[0].top_weight === history[1].top_weight
+                && history[1].top_weight === history[2].top_weight
+                && history.every(s => s.hit_reps_target)) {
                 return exId;
             }
         } catch (e) {}

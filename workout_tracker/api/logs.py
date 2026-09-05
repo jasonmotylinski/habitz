@@ -37,6 +37,28 @@ def get_last_weights_for_workout(workout_id, user_id):
     return weights_by_exercise
 
 
+def session_strength_flags(session_set_logs):
+    """
+    Given one session's SetLog rows, return (top_weight, hit_reps_target).
+
+    - top_weight: heaviest weight among completed sets (None if none).
+    - hit_reps_target: True only if every completed working set at
+      top_weight reached its planned reps. This gates the weight-bump
+      recommendation: same weight 3 sessions in a row only earns a bump
+      when the target reps were actually hit each time.
+    """
+    done = [s for s in session_set_logs if s.completed and s.weight]
+    top_weight = max((s.weight for s in done), default=None)
+    hit_reps_target = bool(top_weight) and all(
+        s.planned_reps is not None
+        and s.actual_reps is not None
+        and s.actual_reps >= s.planned_reps
+        for s in done
+        if s.weight == top_weight
+    )
+    return top_weight, hit_reps_target
+
+
 @api_bp.route("/logs", methods=["GET"])
 @login_required
 def list_logs():
@@ -360,6 +382,7 @@ def exercise_progress(exercise_id):
 
     # Group by workout log for display
     sessions = {}
+    session_set_logs = {}
     for set_log in set_logs:
         log_id = set_log.workout_log_id
         if log_id not in sessions:
@@ -369,7 +392,18 @@ def exercise_progress(exercise_id):
                 "workout_name": set_log.workout_log.custom_name if set_log.workout_log.workout_id is None else set_log.workout_log.workout.name,
                 "sets": [],
             }
+            session_set_logs[log_id] = []
         sessions[log_id]["sets"].append(set_log.to_dict())
+        session_set_logs[log_id].append(set_log)
+
+    if exercise.type == "strength":
+        # Per-session flags consumed by the plateau/bump UI in
+        # active_workout.html — a weight bump is only recommended when
+        # the planned reps were hit at the top weight.
+        for log_id, session in sessions.items():
+            top_weight, hit_reps_target = session_strength_flags(session_set_logs[log_id])
+            session["top_weight"] = top_weight
+            session["hit_reps_target"] = hit_reps_target
 
     # Calculate stats for strength exercises
     stats = {"exercise": exercise.to_dict(), "history": list(sessions.values())}

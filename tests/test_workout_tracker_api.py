@@ -708,3 +708,138 @@ class TestWorkoutProgress:
             logs = WorkoutLog.query.filter_by(user_id=user.id).order_by(WorkoutLog.started_at).all()
             assert logs[0].sets.first().actual_reps == 6
             assert logs[1].sets.first().actual_reps == 8
+
+
+class TestPlateauBumpLogic:
+    """Regression tests for the weight-bump (plateau) recommendation.
+
+    Bug: the bump used to fire whenever the same top weight was used
+    3 sessions in a row, without checking that the planned reps were
+    actually reached. session_strength_flags() now gates the bump on
+    hitting the target reps at the top weight.
+    """
+
+    def _add_session(self, user_id, exercise_id, name, sets):
+        """Add one workout log with the given (weight, planned, actual, completed) sets."""
+        log = WorkoutLog(user_id=user_id, custom_name=name)
+        db.session.add(log)
+        db.session.flush()
+        for num, (weight, planned, actual, completed) in enumerate(sets, start=1):
+            db.session.add(SetLog(
+                workout_log_id=log.id,
+                exercise_id=exercise_id,
+                set_number=num,
+                weight=weight,
+                planned_reps=planned,
+                actual_reps=actual,
+                completed=completed,
+            ))
+        return log
+
+    def _fetch_session_sets(self, exercise_id, user_id, log_id):
+        """Replicate the exercise_progress query, scoped to one session."""
+        return (
+            SetLog.query
+            .filter_by(exercise_id=exercise_id, workout_log_id=log_id)
+            .join(WorkoutLog)
+            .filter(WorkoutLog.user_id == user_id)
+            .all()
+        )
+
+    def test_same_weight_but_missed_reps_disqualifies_bump(self, app, user, exercise):
+        """The failure mode: 3 sessions at the same weight where the last
+        set of one session fell short of planned reps must NOT qualify."""
+        with app.app_context():
+            # Session hitting target: 3x5 @ 135 all completed
+            hit = self._add_session(user.id, exercise.id, 'Hit', [
+                (135.0, 5, 5, True),
+                (135.0, 5, 5, True),
+                (135.0, 5, 5, True),
+            ])
+            # Session missing target on final set: 5, 5, 4 @ 135
+            missed = self._add_session(user.id, exercise.id, 'Missed', [
+                (135.0, 5, 5, True),
+                (135.0, 5, 5, True),
+                (135.0, 5, 4, True),
+            ])
+
+            from workout_tracker.api.logs import session_strength_flags
+
+            sets_hit = self._fetch_session_sets(exercise.id, user.id, hit.id)
+            sets_missed = self._fetch_session_sets(exercise.id, user.id, missed.id)
+
+            top_hit, hit_target_hit = session_strength_flags(sets_hit)
+            top_missed, hit_target_missed = session_strength_flags(sets_missed)
+
+            assert top_hit == 135.0 and top_missed == 135.0
+            assert hit_target_hit is True
+            # Old logic would have recommended a bump here — must not now
+            assert hit_target_missed is False
+
+    def test_all_target_reps_hit_qualifies(self, app, user, exercise):
+        """Every working set at the top weight reached planned reps → qualifies."""
+        with app.app_context():
+            # Includes a lighter completed warm-up set — must be ignored
+            log = self._add_session(user.id, exercise.id, 'Good session', [
+                (95.0, 5, 5, True),
+                (135.0, 5, 5, True),
+                (135.0, 5, 5, True),
+                (135.0, 5, 5, True),
+            ])
+
+            from workout_tracker.api.logs import session_strength_flags
+
+            sets = self._fetch_session_sets(exercise.id, user.id, log.id)
+            top_weight, hit_reps_target = session_strength_flags(sets)
+
+            assert top_weight == 135.0
+            assert hit_reps_target is True
+
+    def test_incomplete_heavier_set_does_not_block_bump(self, app, user, exercise):
+        """An uncompleted attempt above the top weight is ignored —
+        the bump is judged on completed sets only."""
+        with app.app_context():
+            log = self._add_session(user.id, exercise.id, 'Failed attempt', [
+                (135.0, 5, 5, True),
+                (135.0, 5, 5, True),
+                (145.0, 5, 3, False),
+            ])
+
+            from workout_tracker.api.logs import session_strength_flags
+
+            sets = self._fetch_session_sets(exercise.id, user.id, log.id)
+            top_weight, hit_reps_target = session_strength_flags(sets)
+
+            assert top_weight == 135.0
+            assert hit_reps_target is True
+
+    def test_null_planned_reps_disqualifies(self, app, user, exercise):
+        """Sets without planned/actual reps cannot prove the target was hit."""
+        with app.app_context():
+            log = self._add_session(user.id, exercise.id, 'No plan', [
+                (135.0, None, None, True),
+                (135.0, None, None, True),
+            ])
+
+            from workout_tracker.api.logs import session_strength_flags
+
+            sets = self._fetch_session_sets(exercise.id, user.id, log.id)
+            top_weight, hit_reps_target = session_strength_flags(sets)
+
+            assert top_weight == 135.0
+            assert hit_reps_target is False
+
+    def test_no_completed_weighted_sets(self, app, user, exercise):
+        """Nothing completed → no top weight, no bump."""
+        with app.app_context():
+            log = self._add_session(user.id, exercise.id, 'Empty', [
+                (135.0, 5, None, False),
+            ])
+
+            from workout_tracker.api.logs import session_strength_flags
+
+            sets = self._fetch_session_sets(exercise.id, user.id, log.id)
+            top_weight, hit_reps_target = session_strength_flags(sets)
+
+            assert top_weight is None
+            assert hit_reps_target is False
