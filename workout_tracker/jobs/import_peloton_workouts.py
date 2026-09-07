@@ -157,6 +157,17 @@ def parse_workout_data(workout):
     }
 
 
+def _parse_peloton_timestamp(ts):
+    """Convert Peloton timestamp (Unix epoch or ISO string) to datetime."""
+    if ts is None:
+        return None
+    if isinstance(ts, (int, float)):
+        return datetime.utcfromtimestamp(ts)
+    if isinstance(ts, str):
+        return datetime.fromisoformat(ts.replace('Z', '+00:00'))
+    return ts
+
+
 def import_workout(user_id, data, cardio_workout, main_set_exercise):
     """
     Import a single Peloton workout into Habitz.
@@ -164,20 +175,9 @@ def import_workout(user_id, data, cardio_workout, main_set_exercise):
     Creates WorkoutLog + SetLog + PelotonWorkout records.
     Returns the created PelotonWorkout, or None on failure.
     """
-    # Parse timestamps
-    started_at = None
-    if data['started_at']:
-        if isinstance(data['started_at'], str):
-            started_at = datetime.fromisoformat(data['started_at'].replace('Z', '+00:00'))
-        else:
-            started_at = data['started_at']
-
-    ended_at = None
-    if data['ended_at']:
-        if isinstance(data['ended_at'], str):
-            ended_at = datetime.fromisoformat(data['ended_at'].replace('Z', '+00:00'))
-        else:
-            ended_at = data['ended_at']
+    # Parse timestamps (Peloton returns Unix epochs)
+    started_at = _parse_peloton_timestamp(data['started_at'])
+    ended_at = _parse_peloton_timestamp(data['ended_at'])
 
     # Create WorkoutLog
     log = WorkoutLog(
