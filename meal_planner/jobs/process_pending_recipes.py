@@ -41,8 +41,8 @@ try:
     from meal_planner import create_app
     from meal_planner.models import MealPlan, Meal
     from meal_planner.recipe_importer import import_recipe_from_url, extract_domain_name
-    from shared import db
-    from anthropic import Anthropic
+from shared import db
+from openai import OpenAI
     # Import all models that User has relationships to so SQLAlchemy can resolve
     # string-based relationship references when the mapper configures.
     import workout_tracker.models  # noqa: F401 – registers Program, Workout, Exercise, WorkoutLog
@@ -55,15 +55,15 @@ except ImportError as e:
 
 def extract_recipe_with_claude(html, url, api_key):
     """
-    Use Claude to extract recipe data from HTML
+    Use MiMo-V2.5 via OpenCode Go to extract recipe data from HTML
 
     Returns dict with: name, ingredients, instructions, description, servings, prep_time, cook_time
     Returns None if extraction fails
     """
     try:
-        client = Anthropic(api_key=api_key)
+        client = OpenAI(api_key=api_key, base_url="https://opencode.ai/zen/go/v1")
 
-        # Extract recipe-relevant portion of HTML for Claude
+        # Extract recipe-relevant portion of HTML
         # Look for common recipe markers first, then limit to reasonable size
         recipe_start = 0
 
@@ -73,7 +73,7 @@ def extract_recipe_with_claude(html, url, api_key):
             r'<article',
             r'<div class=["\']recipe',
             r'<div class=["\']post-content',
-            r'<main',
+            <r'<main',
             r'<div id=["\']recipe',
         ]
 
@@ -118,14 +118,14 @@ URL: {url}
 HTML:
 {html_excerpt}"""
 
-        response = client.messages.create(
-            model="claude-sonnet-4-5-20250929",
+        response = client.chat.completions.create(
+            model="mimo-v2.5",
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}]
         )
 
         # Extract JSON from response
-        response_text = response.content[0].text.strip()
+        response_text = response.choices[0].message.content.strip()
 
         # Remove markdown code blocks if present
         if response_text.startswith('```'):
@@ -137,10 +137,10 @@ HTML:
         return recipe_data
 
     except json.JSONDecodeError as e:
-        logger.warning(f"Claude returned invalid JSON for {url}: {e}")
+        logger.warning(f"MiMo returned invalid JSON for {url}: {e}")
         return None
     except Exception as e:
-        logger.error(f"Error calling Claude API for {url}: {e}")
+        logger.error(f"Error calling MiMo API for {url}: {e}")
         return None
 
 
@@ -151,10 +151,10 @@ def process_pending_recipes():
 
     with app.app_context():
         # Get API key from environment or config
-        api_key = app.config.get('ANTHROPIC_API_KEY')
+        api_key = app.config.get('OPENCODE_API_KEY')
 
         if not api_key:
-            logger.error("ANTHROPIC_API_KEY not found in config")
+            logger.error("OPENCODE_API_KEY not found in config")
             return False
 
         # Find all pending imports (failed ones are not retried)
@@ -185,7 +185,7 @@ def process_pending_recipes():
 
                 if not recipe_data:
                     # Step 2: Try Claude API for intelligent parsing
-                    logger.info(f"Schema.org failed, trying Claude API for {meal_plan.source_url}")
+                    logger.info(f"Schema.org failed, trying MiMo API for {meal_plan.source_url}")
 
                     # Fetch HTML
                     import urllib.request
