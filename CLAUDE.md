@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with the Habitz platform.
 
+**Durable facts:** When you learn a durable fact about this project (server locations, deployment layout, environment quirks, credentials paths, data structure decisions), always record it in this file — do not rely on conversation memory.
+
 ## Platform Overview
 
 Habitz is a unified wellness platform. The primary entry point is `habitz/habitz/` — a single-process WSGI app that mounts all sub-apps under one domain. The four original standalone apps in the repo root subdirectories (`meal-planner/`, `workout-tracker/`, etc.) are **not used in production**; the unified app is the live system.
@@ -99,6 +101,26 @@ Key columns on `User`:
 
 The meal planner has its own `auth_bp` with `/login`, `/register`, `/logout` routes — usable standalone without the landing page login. It uses the same `habitz.db` user table.
 
+## Recipe Import (`meal_planner/jobs/process_pending_recipes.py`)
+
+Cron job runs every 5 minutes. Scrapes recipe URLs and uses **MiMo-V2.5** (open-weight, Xiaomi) via OpenCode Go to extract structured recipe data when schema.org parsing fails.
+
+- **API:** OpenAI-compatible endpoint at `https://opencode.ai/zen/go/v1/chat/completions`
+- **Model:** `mimo-v2.5`
+- **Env var:** `OPENCODE_API_KEY` (in `.env`, gitignored)
+- **Cost:** Included in $10/month OpenCode Go subscription
+
+## Peloton Import (`workout_tracker/jobs/import_peloton_workouts.py`)
+
+Cron job runs daily at 6:00 AM. Imports completed Peloton cycling workouts using the `pylotoncycle` library.
+
+- **Library:** `pylotoncycle` (v0.9.5+, handles auth + API calls)
+- **First run:** Fetches 50 rides (~90 days backfill)
+- **Daily runs:** Fetches 10 rides (only new ones imported)
+- **Dedup:** `peloton_workouts.peloton_workout_id` (unique constraint)
+- **Env vars:** `PELOTON_USERNAME`, `PELOTON_PASSWORD` (in `.env`, gitignored)
+- **Data stored:** WorkoutLog + SetLog (duration) + PelotonWorkout (output, calories, cadence, resistance, heart rate, leaderboard rank)
+
 ## Utility Scripts (`habitz/habitz/scripts/`)
 
 | Script | Purpose |
@@ -125,6 +147,18 @@ Run tests with: `venv/bin/python -m pytest tests/test_workout_tracker_api.py -v`
 - `GOOGLE_SHEET_ID` — spreadsheet ID from the budgetz Google Sheet URL
 
 The service account JSON file is at `/Users/jason/code/personal/habitz/budget-490711-92178b410d52.json`.
+
+## Production Deployment
+
+Habitz production runs on the **rawkit-01** server (ssh alias `rawkit-01`, IP `5.161.251.18`):
+
+- **App dir:** `/var/projects/habitz` (the repo root, i.e. the outer `habitz/` directory)
+- **Service:** systemd unit `habitz` running gunicorn via `scripts/prod/server.sh` (unix socket `/run/habitz.sock`)
+- **Production DB:** `/var/projects/habitz/instance/habitz.db` (root-owned — read with `sudo sqlite3` over ssh)
+- **Deploy:** `scripts/prod/deploy.sh` on the server (git pull → tests → migrations → restart)
+- **Auto-deploy:** Pushing to `main` triggers a GitHub Actions workflow that runs `deploy.sh` on rawkit-01 automatically — no manual SSH deploy needed.
+- **Program structure:** The sole program "Routine" alternates Push → Cardio → Pull → Cardio → Legs → Cardio; the multiple Cardio workout templates (each with their own Peloton exercise rows) are intentional, not duplicates.
+- **Data quirk — cardio undercounted:** Cardio is done on the Peloton app and mostly NOT logged in Habitz. `workout_logs` Cardio rows only capture a fraction of actual rides; assume cardio happens between every PPL workout regardless of what the DB shows.
 
 ## Shared Conventions
 
