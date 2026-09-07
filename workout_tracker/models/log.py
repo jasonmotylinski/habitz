@@ -69,3 +69,24 @@ class SetLog(db.Model):
             "duration_minutes": self.duration_minutes,
             "completed": self.completed,
         }
+
+
+class PelotonWorkout(db.Model):
+    __tablename__ = "peloton_workouts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    peloton_workout_id = db.Column(db.String(64), unique=True, nullable=False)
+    ride_title = db.Column(db.String(200))
+    ride_duration = db.Column(db.Integer)  # minutes
+    total_output = db.Column(db.Float)  # kJ
+    calories = db.Column(db.Integer)
+    average_cadence = db.Column(db.Float)
+    average_resistance = db.Column(db.Float)
+    average_heartrate = db.Column(db.Float)
+    leaderboard_rank = db.Column(db.Integer)
+    total_leaderboard = db.Column(db.Integer)
+    imported_at = db.Column(db.DateTime, default=datetime.utcnow)
+    workout_log_id = db.Column(db.Integer, db.ForeignKey("workout_logs.id"), nullable=True)
+
+    workout_log = db.relationship("WorkoutLog")

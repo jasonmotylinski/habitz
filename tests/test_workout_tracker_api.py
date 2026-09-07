@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from workout_tracker.models.program import Program, ProgramWorkoutOrder
 from workout_tracker.models.workout import Workout, WorkoutExercise
 from workout_tracker.models.exercise import Exercise
-from workout_tracker.models.log import WorkoutLog, SetLog
+from workout_tracker.models.log import WorkoutLog, SetLog, PelotonWorkout
 from shared import db
 from shared.user import User
 
@@ -993,3 +993,96 @@ class TestWorkoutFrequency:
                 else:
                     break
             assert current_streak == 0
+
+
+class TestPelotonWorkout:
+    """Tests for PelotonWorkout model and import logic."""
+
+    def test_peloton_workout_creation(self, app, user):
+        """PelotonWorkout record can be created with all fields."""
+        with app.app_context():
+            log = WorkoutLog(user_id=user.id, custom_name='Peloton: Test Ride')
+            db.session.add(log)
+            db.session.flush()
+
+            pw = PelotonWorkout(
+                user_id=user.id,
+                peloton_workout_id='test-123',
+                ride_title='45 min Power Zone Max',
+                ride_duration=45,
+                total_output=450.0,
+                calories=350,
+                average_cadence=85.0,
+                average_resistance=42.0,
+                average_heartrate=145.0,
+                leaderboard_rank=150,
+                total_leaderboard=5000,
+                workout_log_id=log.id,
+            )
+            db.session.add(pw)
+            db.session.commit()
+
+            assert pw.id is not None
+            assert pw.peloton_workout_id == 'test-123'
+            assert pw.ride_title == '45 min Power Zone Max'
+            assert pw.ride_duration == 45
+            assert pw.workout_log_id == log.id
+
+    def test_peloton_workout_dedup(self, app, user):
+        """Duplicate peloton_workout_id raises IntegrityError."""
+        from sqlalchemy.exc import IntegrityError
+        with app.app_context():
+            pw1 = PelotonWorkout(
+                user_id=user.id,
+                peloton_workout_id='dedup-test',
+                ride_title='Ride 1',
+            )
+            db.session.add(pw1)
+            db.session.commit()
+
+            pw2 = PelotonWorkout(
+                user_id=user.id,
+                peloton_workout_id='dedup-test',
+                ride_title='Ride 2',
+            )
+            db.session.add(pw2)
+            with pytest.raises(IntegrityError):
+                db.session.commit()
+            db.session.rollback()
+
+    def test_parse_workout_data_extracts_fields(self, app, user):
+        """parse_workout_data extracts and normalizes fields from Peloton response."""
+        with app.app_context():
+            from workout_tracker.jobs.import_peloton_workouts import parse_workout_data
+
+            mock_workout = {
+                'id': 'abc-123',
+                'status': 'COMPLETE',
+                'fitness_discipline': 'cycling',
+                'start_time': '2026-09-01T10:00:00+00:00',
+                'end_time': '2026-09-01T10:45:00+00:00',
+                'leaderboard_rank': 100,
+                'total_leaderboard_users': 3000,
+                'ride': {
+                    'title': '45 min HIIT Ride',
+                    'duration': 2700,
+                },
+                'performance_graph': {
+                    'summaries': [
+                        {'metric_type': 'total_output', 'value': 500.0},
+                        {'metric_type': 'calories', 'value': 400},
+                        {'metric_type': 'avg_cadence', 'value': 88.0},
+                    ]
+                }
+            }
+
+            result = parse_workout_data(mock_workout)
+
+            assert result['peloton_workout_id'] == 'abc-123'
+            assert result['ride_title'] == '45 min HIIT Ride'
+            assert result['ride_duration'] == 45
+            assert result['total_output'] == 500.0
+            assert result['calories'] == 400
+            assert result['average_cadence'] == 88.0
+            assert result['leaderboard_rank'] == 100
+            assert result['total_leaderboard'] == 3000

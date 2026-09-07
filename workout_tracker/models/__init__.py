@@ -2,7 +2,7 @@ from .user import User  # re-exported from shared.user
 from .program import Program, ProgramWorkoutOrder
 from .workout import Workout, WorkoutExercise
 from .exercise import Exercise
-from .log import WorkoutLog, SetLog
+from .log import WorkoutLog, SetLog, PelotonWorkout
 
 __all__ = [
     "User",
@@ -13,4 +13,5 @@ __all__ = [
     "Exercise",
     "WorkoutLog",
     "SetLog",
+    "PelotonWorkout",
 ]
