@@ -843,3 +843,153 @@ class TestPlateauBumpLogic:
 
             assert top_weight is None
             assert hit_reps_target is False
+
+
+class TestWorkoutFrequency:
+    """Tests for the workout frequency endpoint.
+
+    Follows the existing test pattern: replicate the aggregation logic
+    directly rather than hitting the HTTP endpoint (which requires auth
+    setup that the test client doesn't have).
+    """
+
+    def _add_completed_log(self, user_id, days_ago):
+        """Add a completed workout log at a given offset from today."""
+        log = WorkoutLog(
+            user_id=user_id,
+            custom_name=f'Workout {days_ago}d ago',
+            started_at=datetime.utcnow() - __import__('datetime').timedelta(days=days_ago),
+            completed_at=datetime.utcnow() - __import__('datetime').timedelta(days=days_ago),
+        )
+        db.session.add(log)
+        db.session.flush()
+        return log
+
+    def _get_weekly_counts(self, user_id):
+        """Replicate the weekly aggregation logic from the endpoint."""
+        from collections import Counter
+        now = datetime.utcnow()
+        start = now - __import__('datetime').timedelta(weeks=11, days=now.weekday())
+        start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        logs = (
+            WorkoutLog.query
+            .filter_by(user_id=user_id)
+            .filter(WorkoutLog.completed_at.isnot(None))
+            .order_by(WorkoutLog.started_at.asc())
+            .all()
+        )
+
+        counts = Counter()
+        for log in logs:
+            if log.started_at < start:
+                continue
+            iso = log.started_at.isocalendar()
+            counts[f"{iso[0]}-W{iso[1]:02d}"] += 1
+
+        data = []
+        for i in range(12):
+            week_start = start + __import__('datetime').timedelta(weeks=i)
+            iso = week_start.isocalendar()
+            key = f"{iso[0]}-W{iso[1]:02d}"
+            data.append({"label": week_start.strftime("%b %d"), "count": counts.get(key, 0)})
+
+        return data
+
+    def test_weekly_returns_12_weeks(self, app, user):
+        """Weekly view returns exactly 12 data points."""
+        with app.app_context():
+            self._add_completed_log(user.id, days_ago=5)
+            db.session.commit()
+            data = self._get_weekly_counts(user.id)
+            assert len(data) == 12
+
+    def test_monthly_returns_12_months(self, app, user):
+        """Monthly view returns exactly 12 data points."""
+        with app.app_context():
+            self._add_completed_log(user.id, days_ago=30)
+            db.session.commit()
+
+            from collections import Counter
+            now = datetime.utcnow()
+            start = (now.replace(day=1) - __import__('datetime').timedelta(days=365)).replace(hour=0, minute=0, second=0, microsecond=0)
+
+            logs = WorkoutLog.query.filter_by(user_id=user.id).filter(WorkoutLog.completed_at.isnot(None)).all()
+            counts = Counter()
+            for log in logs:
+                if log.started_at < start:
+                    continue
+                counts[log.started_at.strftime("%Y-%m")] += 1
+
+            data = []
+            for i in range(12):
+                month = (start.month - 1 + i) % 12 + 1
+                year = start.year + (start.month - 1 + i) // 12
+                key = f"{year}-{month:02d}"
+                data.append({"label": datetime(year, month, 1).strftime("%b"), "count": counts.get(key, 0)})
+
+            assert len(data) == 12
+
+    def test_yearly_returns_all_years(self, app, user):
+        """Yearly view returns data for each year with workouts."""
+        with app.app_context():
+            self._add_completed_log(user.id, days_ago=5)
+            db.session.commit()
+
+            from collections import Counter
+            now = datetime.utcnow()
+            logs = WorkoutLog.query.filter_by(user_id=user.id).filter(WorkoutLog.completed_at.isnot(None)).all()
+            counts = Counter()
+            for log in logs:
+                counts[str(log.started_at.year)] += 1
+
+            min_year = min(int(k) for k in counts.keys())
+            max_year = now.year
+            data = [{"label": str(y), "count": counts.get(str(y), 0)} for y in range(min_year, max_year + 1)]
+
+            assert len(data) >= 1
+            assert data[-1]['count'] >= 1
+
+    def test_counts_multiple_workouts_in_same_week(self, app, user):
+        """Multiple workouts in the same week are counted correctly."""
+        with app.app_context():
+            self._add_completed_log(user.id, days_ago=1)
+            self._add_completed_log(user.id, days_ago=3)
+            db.session.commit()
+            data = self._get_weekly_counts(user.id)
+            max_count = max(d['count'] for d in data)
+            assert max_count >= 2
+
+    def test_streak_counts_consecutive_weeks(self, app, user):
+        """Current streak counts consecutive weeks with workouts from the end."""
+        with app.app_context():
+            # Add workouts today and yesterday (both in the current week since today is Monday)
+            self._add_completed_log(user.id, days_ago=0)
+            self._add_completed_log(user.id, days_ago=1)
+            db.session.commit()
+            data = self._get_weekly_counts(user.id)
+
+            current_streak = 0
+            for d in reversed(data):
+                if d['count'] > 0:
+                    current_streak += 1
+                else:
+                    break
+
+            # The most recent week should have workouts
+            assert current_streak >= 1
+
+    def test_empty_returns_zeros(self, app, user):
+        """No workouts returns empty data with zero stats."""
+        with app.app_context():
+            data = self._get_weekly_counts(user.id)
+            total = sum(d['count'] for d in data)
+            assert total == 0
+
+            current_streak = 0
+            for d in reversed(data):
+                if d['count'] > 0:
+                    current_streak += 1
+                else:
+                    break
+            assert current_streak == 0

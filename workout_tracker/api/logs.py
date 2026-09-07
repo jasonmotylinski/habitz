@@ -1,5 +1,6 @@
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from collections import Counter
 
 from flask import request, jsonify
 from flask_login import login_required, current_user
@@ -444,3 +445,124 @@ def exercise_progress(exercise_id):
         stats["recent_durations"] = recent_durations
 
     return jsonify(stats), 200
+
+
+@api_bp.route("/logs/frequency", methods=["GET"])
+@login_required
+def workout_frequency():
+    """
+    Return workout counts aggregated by time period for frequency charts.
+
+    Query params:
+        period: week (last 12 weeks), month (last 12 months), year (all years)
+
+    Returns:
+        { period, data: [{ label, count }], stats: { total, avg_per_week, current_streak, best_streak } }
+    """
+    period = request.args.get("period", "week")
+    now = datetime.utcnow()
+
+    # Fetch all completed logs for the user
+    all_logs = (
+        WorkoutLog.query
+        .filter_by(user_id=current_user.id)
+        .filter(WorkoutLog.completed_at.isnot(None))
+        .order_by(WorkoutLog.started_at.asc())
+        .all()
+    )
+
+    if not all_logs:
+        return jsonify({
+            "period": period,
+            "data": [],
+            "stats": {"total": 0, "avg_per_week": 0, "current_streak": 0, "best_streak": 0},
+        }), 200
+
+    # --- Build period buckets ---
+
+    if period == "week":
+        # Last 12 weeks
+        start = now - timedelta(weeks=11, days=now.weekday())  # start of week 12 weeks ago
+        start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        counts = Counter()
+        for log in all_logs:
+            if log.started_at < start:
+                continue
+            iso = log.started_at.isocalendar()
+            counts[f"{iso[0]}-W{iso[1]:02d}"] += 1
+
+        data = []
+        for i in range(12):
+            week_start = start + timedelta(weeks=i)
+            iso = week_start.isocalendar()
+            key = f"{iso[0]}-W{iso[1]:02d}"
+            label = week_start.strftime("%b %d")
+            data.append({"label": label, "count": counts.get(key, 0)})
+
+    elif period == "month":
+        # Last 12 months
+        start = (now.replace(day=1) - timedelta(days=365)).replace(hour=0, minute=0, second=0, microsecond=0)
+
+        counts = Counter()
+        for log in all_logs:
+            if log.started_at < start:
+                continue
+            counts[log.started_at.strftime("%Y-%m")] += 1
+
+        data = []
+        for i in range(12):
+            # Walk forward from start
+            month = (start.month - 1 + i) % 12 + 1
+            year = start.year + (start.month - 1 + i) // 12
+            key = f"{year}-{month:02d}"
+            label = datetime(year, month, 1).strftime("%b")
+            data.append({"label": label, "count": counts.get(key, 0)})
+
+    else:  # year
+        counts = Counter()
+        for log in all_logs:
+            counts[str(log.started_at.year)] += 1
+
+        min_year = min(int(k) for k in counts.keys())
+        max_year = now.year
+        data = []
+        for y in range(min_year, max_year + 1):
+            key = str(y)
+            data.append({"label": key, "count": counts.get(key, 0)})
+
+    # --- Stats ---
+
+    # Avg per week: use actual date span of all logs
+    first_date = all_logs[0].started_at
+    last_date = all_logs[-1].started_at
+    weeks_span = max(1, (last_date - first_date).days / 7)
+    avg_per_week = round(len(all_logs) / weeks_span, 1)
+
+    # Streaks: consecutive non-zero periods from end (current), longest run (best)
+    current_streak = 0
+    for d in reversed(data):
+        if d["count"] > 0:
+            current_streak += 1
+        else:
+            break
+
+    best_streak = 0
+    streak = 0
+    for d in data:
+        if d["count"] > 0:
+            streak += 1
+            best_streak = max(best_streak, streak)
+        else:
+            streak = 0
+
+    return jsonify({
+        "period": period,
+        "data": data,
+        "stats": {
+            "total": len(all_logs),
+            "avg_per_week": avg_per_week,
+            "current_streak": current_streak,
+            "best_streak": best_streak,
+        },
+    }), 200

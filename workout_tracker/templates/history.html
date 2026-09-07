@@ -9,6 +9,7 @@
 <div class="tabs">
     <button class="tab active" id="tab-list" onclick="switchTab('list')">List</button>
     <button class="tab" id="tab-calendar" onclick="switchTab('calendar')">Calendar</button>
+    <button class="tab" id="tab-progress" onclick="switchTab('progress')">Progress</button>
 </div>
 
 <div id="list-view">
@@ -44,15 +45,49 @@
     <div class="calendar-grid" id="calendar-days"></div>
     <div id="day-detail" class="mt-4"></div>
 </div>
+
+<div id="progress-view" class="hidden">
+    <div class="sub-tabs">
+        <button class="sub-tab active" id="subtab-week" onclick="switchProgressPeriod('week')">Week</button>
+        <button class="sub-tab" id="subtab-month" onclick="switchProgressPeriod('month')">Month</button>
+        <button class="sub-tab" id="subtab-year" onclick="switchProgressPeriod('year')">Year</button>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-value" id="stat-total">—</div>
+            <div class="stat-label">Total Sessions</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="stat-avg">—</div>
+            <div class="stat-label">Avg / Week</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="stat-streak">—</div>
+            <div class="stat-label">Current Streak</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="stat-best">—</div>
+            <div class="stat-label">Best Streak</div>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="frequency-chart"></canvas>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
 let currentTab = 'list';
 let calMonth, calYear;
 let workoutDates = [];
 let allLogs = [];
 let expandedLogId = null;
+let frequencyChart = null;
+let currentPeriod = 'week';
 
 const now = new Date();
 calMonth = now.getMonth() + 1;
@@ -62,11 +97,89 @@ function switchTab(tab) {
     currentTab = tab;
     document.getElementById('tab-list').classList.toggle('active', tab === 'list');
     document.getElementById('tab-calendar').classList.toggle('active', tab === 'calendar');
+    document.getElementById('tab-progress').classList.toggle('active', tab === 'progress');
     document.getElementById('list-view').classList.toggle('hidden', tab !== 'list');
     document.getElementById('calendar-view').classList.toggle('hidden', tab !== 'calendar');
+    document.getElementById('progress-view').classList.toggle('hidden', tab !== 'progress');
 
     if (tab === 'calendar') loadCalendar();
+    else if (tab === 'progress') loadFrequency();
     else loadHistory();
+}
+
+function switchProgressPeriod(period) {
+    currentPeriod = period;
+    document.getElementById('subtab-week').classList.toggle('active', period === 'week');
+    document.getElementById('subtab-month').classList.toggle('active', period === 'month');
+    document.getElementById('subtab-year').classList.toggle('active', period === 'year');
+    loadFrequency();
+}
+
+async function loadFrequency() {
+    const data = await api.get(`/api/logs/frequency?period=${currentPeriod}`);
+
+    // Update stats
+    document.getElementById('stat-total').textContent = data.stats.total;
+    document.getElementById('stat-avg').textContent = data.stats.avg_per_week;
+    document.getElementById('stat-streak').textContent = `${data.stats.current_streak}w`;
+    document.getElementById('stat-best').textContent = `${data.stats.best_streak}w`;
+
+    // Render chart
+    const ctx = document.getElementById('frequency-chart').getContext('2d');
+    const labels = data.data.map(d => d.label);
+    const counts = data.data.map(d => d.count);
+
+    if (frequencyChart) {
+        frequencyChart.data.labels = labels;
+        frequencyChart.data.datasets[0].data = counts;
+        frequencyChart.update();
+    } else {
+        frequencyChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Workouts',
+                    data: counts,
+                    borderColor: '#4a9eff',
+                    backgroundColor: 'rgba(74, 158, 255, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    spanGaps: true,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            color: '#8b949e',
+                        },
+                        grid: {
+                            color: 'rgba(139, 148, 158, 0.1)',
+                        },
+                    },
+                    x: {
+                        ticks: {
+                            color: '#8b949e',
+                            maxTicksLimit: 8,
+                        },
+                        grid: {
+                            display: false,
+                        },
+                    },
+                },
+            },
+        });
+    }
 }
 
 async function loadHistory() {
