@@ -236,16 +236,19 @@ function getPeriodDateRange(idx, period) {
     let from, to;
 
     if (period === 'week') {
-        // Weeks are shown oldest first, 12 weeks total
-        // Calculate the start of the 12-week window
-        const start = new Date(now);
-        start.setDate(start.getDate() - (11 * 7) - start.getDay()); // Go back 11 weeks + to Monday
-        start.setHours(0, 0, 0, 0);
+        // Match Python: Monday-Sunday weeks
+        // Find Monday of the current week
+        const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        const thisMonday = new Date(now);
+        thisMonday.setDate(now.getDate() + mondayOffset);
+        thisMonday.setHours(0, 0, 0, 0);
 
-        from = new Date(start);
-        from.setDate(from.getDate() + (idx * 7));
+        // Go back idx weeks from this Monday
+        from = new Date(thisMonday);
+        from.setDate(thisMonday.getDate() - (idx * 7));
         to = new Date(from);
-        to.setDate(to.getDate() + 6);
+        to.setDate(from.getDate() + 6); // Sunday
         to.setHours(23, 59, 59, 999);
     } else if (period === 'month') {
         // Months are shown oldest first, 12 months total
