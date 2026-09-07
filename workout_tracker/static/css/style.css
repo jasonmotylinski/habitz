@@ -893,6 +893,38 @@ select.form-control {
     height: 280px;
 }
 
+/* Period detail (clicked chart point) */
+.period-detail-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 16px 0 10px;
+}
+
+.period-detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.period-detail-item {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+}
+
+.period-detail-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.period-detail-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
 /* Toast */
 .toast {
     position: fixed;

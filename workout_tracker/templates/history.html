@@ -75,6 +75,8 @@
     <div class="chart-container">
         <canvas id="frequency-chart"></canvas>
     </div>
+
+    <div id="period-detail" class="hidden"></div>
 </div>
 {% endblock %}
 
@@ -88,6 +90,7 @@ let allLogs = [];
 let expandedLogId = null;
 let frequencyChart = null;
 let currentPeriod = 'week';
+let frequencyData = []; // Store period data for click handling
 
 const now = new Date();
 calMonth = now.getMonth() + 1;
@@ -124,6 +127,9 @@ async function loadFrequency() {
     document.getElementById('stat-streak').textContent = `${data.stats.current_streak}w`;
     document.getElementById('stat-best').textContent = `${data.stats.best_streak}w`;
 
+    // Store period data for click handling
+    frequencyData = data.data;
+
     // Render chart
     const ctx = document.getElementById('frequency-chart').getContext('2d');
     const labels = data.data.map(d => d.label);
@@ -153,6 +159,7 @@ async function loadFrequency() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                onClick: handleChartClick,
                 plugins: {
                     legend: { display: false },
                 },
@@ -180,6 +187,82 @@ async function loadFrequency() {
             },
         });
     }
+
+    // Hide detail when switching periods
+    document.getElementById('period-detail').classList.add('hidden');
+}
+
+async function handleChartClick(event) {
+    const points = frequencyChart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, false);
+    if (!points.length) return;
+
+    const idx = points[0].index;
+    const period = frequencyData[idx];
+    if (!period || period.count === 0) return;
+
+    // Calculate date range for this period
+    const { from, to } = getPeriodDateRange(idx, currentPeriod);
+
+    // Fetch workouts for this period
+    const logs = await api.get(`/api/logs?from=${from}&to=${to}`);
+
+    // Render detail
+    const container = document.getElementById('period-detail');
+    if (!logs.length) {
+        container.innerHTML = `<p class="text-muted text-center">No workouts found</p>`;
+    } else {
+        container.innerHTML = `
+            <h3 class="period-detail-title">${period.label} — ${logs.length} workout${logs.length !== 1 ? 's' : ''}</h3>
+            <div class="period-detail-list">
+                ${logs.map(log => {
+                    const date = new Date(log.started_at);
+                    const dateStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                    const exercises = (log.sets || []).map(s => s.exercise_name).filter((v, i, a) => a.indexOf(v) === i);
+                    return `
+                        <div class="period-detail-item">
+                            <div class="period-detail-name">${log.workout_name}</div>
+                            <div class="period-detail-meta">${dateStr}${exercises.length ? ' — ' + exercises.join(', ') : ''}</div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+    container.classList.remove('hidden');
+}
+
+function getPeriodDateRange(idx, period) {
+    const now = new Date();
+    let from, to;
+
+    if (period === 'week') {
+        // Weeks are shown oldest first, 12 weeks total
+        // Calculate the start of the 12-week window
+        const start = new Date(now);
+        start.setDate(start.getDate() - (11 * 7) - start.getDay()); // Go back 11 weeks + to Monday
+        start.setHours(0, 0, 0, 0);
+
+        from = new Date(start);
+        from.setDate(from.getDate() + (idx * 7));
+        to = new Date(from);
+        to.setDate(to.getDate() + 6);
+        to.setHours(23, 59, 59, 999);
+    } else if (period === 'month') {
+        // Months are shown oldest first, 12 months total
+        const start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+        from = new Date(start.getFullYear(), start.getMonth() + idx, 1);
+        to = new Date(from.getFullYear(), from.getMonth() + 1, 0, 23, 59, 59, 999);
+    } else {
+        // Years
+        const minYear = frequencyData[0]?.label;
+        from = new Date(parseInt(minYear) + idx, 0, 1);
+        to = new Date(parseInt(minYear) + idx, 11, 31, 23, 59, 59, 999);
+    }
+
+    return {
+        from: from.toISOString().split('T')[0],
+        to: to.toISOString().split('T')[0],
+    };
 }
 
 async function loadHistory() {
