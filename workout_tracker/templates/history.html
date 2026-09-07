@@ -206,22 +206,21 @@ async function handleChartClick(event) {
     // Fetch workouts for this period
     const logs = await api.get(`/api/logs?from=${from}&to=${to}`);
 
-    // Render detail
+    // Render detail — simple format like the calendar
     const container = document.getElementById('period-detail');
     if (!logs.length) {
         container.innerHTML = `<p class="text-muted text-center">No workouts found</p>`;
     } else {
         container.innerHTML = `
-            <h3 class="period-detail-title">${period.label} — ${logs.length} workout${logs.length !== 1 ? 's' : ''}</h3>
+            <h3 class="period-detail-title">${period.label}</h3>
             <div class="period-detail-list">
                 ${logs.map(log => {
                     const date = new Date(log.started_at);
                     const dateStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-                    const exercises = (log.sets || []).map(s => s.exercise_name).filter((v, i, a) => a.indexOf(v) === i);
                     return `
                         <div class="period-detail-item">
                             <div class="period-detail-name">${log.workout_name}</div>
-                            <div class="period-detail-meta">${dateStr}${exercises.length ? ' — ' + exercises.join(', ') : ''}</div>
+                            <div class="period-detail-meta">${dateStr}</div>
                         </div>
                     `;
                 }).join('')}
@@ -236,7 +235,7 @@ function getPeriodDateRange(idx, period) {
     let from, to;
 
     if (period === 'week') {
-        // Match Python: Monday-Sunday weeks
+        // Match Python: Monday-Sunday weeks, oldest first
         // Find Monday of the current week
         const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
         const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
@@ -244,9 +243,13 @@ function getPeriodDateRange(idx, period) {
         thisMonday.setDate(now.getDate() + mondayOffset);
         thisMonday.setHours(0, 0, 0, 0);
 
-        // Go back idx weeks from this Monday
-        from = new Date(thisMonday);
-        from.setDate(thisMonday.getDate() - (idx * 7));
+        // Oldest week (idx=0) is 11 weeks back from this Monday
+        const oldestMonday = new Date(thisMonday);
+        oldestMonday.setDate(thisMonday.getDate() - (11 * 7));
+
+        // Go forward idx weeks from oldest
+        from = new Date(oldestMonday);
+        from.setDate(oldestMonday.getDate() + (idx * 7));
         to = new Date(from);
         to.setDate(from.getDate() + 6); // Sunday
         to.setHours(23, 59, 59, 999);
