@@ -501,8 +501,12 @@ def workout_frequency():
             data.append({"label": label, "count": counts.get(key, 0)})
 
     elif period == "month":
-        # Last 12 months
-        start = (now.replace(day=1) - timedelta(days=365)).replace(hour=0, minute=0, second=0, microsecond=0)
+        # Last 12 months — must match frontend getPeriodDateRange()
+        # Frontend uses: new Date(now.getFullYear(), now.getMonth() - 11, 1)
+        start_month = now.month - 11
+        start_year = now.year + (start_month - 1) // 12
+        start_month = (start_month - 1) % 12 + 1
+        start = datetime(start_year, start_month, 1, tzinfo=timezone.utc)
 
         counts = Counter()
         for log in all_logs:

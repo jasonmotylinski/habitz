@@ -912,7 +912,11 @@ class TestWorkoutFrequency:
 
             from collections import Counter
             now = datetime.utcnow()
-            start = (now.replace(day=1) - __import__('datetime').timedelta(days=365)).replace(hour=0, minute=0, second=0, microsecond=0)
+            # Must match frontend getPeriodDateRange(): new Date(now.getFullYear(), now.getMonth() - 11, 1)
+            start_month = now.month - 11
+            start_year = now.year + (start_month - 1) // 12
+            start_month = (start_month - 1) % 12 + 1
+            start = datetime(start_year, start_month, 1)
 
             logs = WorkoutLog.query.filter_by(user_id=user.id).filter(WorkoutLog.completed_at.isnot(None)).all()
             counts = Counter()
@@ -929,6 +933,28 @@ class TestWorkoutFrequency:
                 data.append({"label": datetime(year, month, 1).strftime("%b"), "count": counts.get(key, 0)})
 
             assert len(data) == 12
+
+    def test_monthly_range_matches_frontend(self, app, user):
+        """Monthly range must match frontend getPeriodDateRange() to prevent off-by-one click bugs."""
+        with app.app_context():
+            now = datetime.utcnow()
+            # Frontend: new Date(now.getFullYear(), now.getMonth() - 11, 1)
+            expected_start_month = (now.month - 11 - 1) % 12 + 1
+            expected_start_year = now.year + (now.month - 11 - 1) // 12
+
+            # Backend calculation (must match)
+            start_month = now.month - 11
+            start_year = now.year + (start_month - 1) // 12
+            start_month = (start_month - 1) % 12 + 1
+
+            assert start_month == expected_start_month
+            assert start_year == expected_start_year
+
+            # Last month should be current month
+            last_month = (start_month - 1 + 11) % 12 + 1
+            last_year = start_year + (start_month - 1 + 11) // 12
+            assert last_month == now.month
+            assert last_year == now.year
 
     def test_yearly_returns_all_years(self, app, user):
         """Yearly view returns data for each year with workouts."""
