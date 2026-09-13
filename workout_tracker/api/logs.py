@@ -506,7 +506,7 @@ def workout_frequency():
         start_month = now.month - 11
         start_year = now.year + (start_month - 1) // 12
         start_month = (start_month - 1) % 12 + 1
-        start = datetime(start_year, start_month, 1, tzinfo=timezone.utc)
+        start = datetime(start_year, start_month, 1)
 
         counts = Counter()
         for log in all_logs:
