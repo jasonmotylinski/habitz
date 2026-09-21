@@ -1112,3 +1112,137 @@ class TestPelotonWorkout:
             assert result['average_cadence'] == 88.0
             assert result['leaderboard_rank'] == 100
             assert result['total_leaderboard'] == 3000
+
+
+class TestAppleHealthExport:
+    """Tests for the Apple Health export endpoint (Bearer token auth)."""
+
+    def _call_export(self, app, query_string=None, headers=None):
+        """Invoke export_apple_health() in a request context; return (data, status)."""
+        from workout_tracker.api.export import export_apple_health
+        with app.test_request_context(
+            '/api/export/apple-health',
+            query_string=query_string or {},
+            headers=headers or {},
+        ):
+            resp = export_apple_health()
+        if isinstance(resp, tuple):
+            return resp[0].get_json(), resp[1]
+        return resp.get_json(), 200
+
+    def _set_token(self, app, user_id, token):
+        with app.app_context():
+            u = db.session.get(User, user_id)
+            u.apple_health_token = token
+            db.session.commit()
+
+    def _add_completed_log(self, user_id, name, days_ago=0, start_offset_minutes=0):
+        now = datetime.now(timezone.utc) - __import__('datetime').timedelta(days=days_ago)
+        log = WorkoutLog(
+            user_id=user_id,
+            custom_name=name,
+            started_at=now - __import__('datetime').timedelta(minutes=start_offset_minutes),
+            completed_at=now,
+        )
+        db.session.add(log)
+        db.session.flush()
+        return log
+
+    def test_export_maps_peloton_and_strength_workouts(self, app, user, exercise):
+        with app.app_context():
+            # strength log (has a strength set)
+            strength_log = self._add_completed_log(user.id, 'Push Day', start_offset_minutes=45)
+            db.session.add(SetLog(
+                workout_log_id=strength_log.id,
+                exercise_id=exercise.id,
+                set_number=1,
+                planned_reps=8,
+                actual_reps=8,
+                weight=225.0,
+                completed=True,
+            ))
+            # peloton-linked log
+            ride_log = self._add_completed_log(user.id, 'Ride', start_offset_minutes=30)
+            db.session.add(PelotonWorkout(
+                user_id=user.id,
+                peloton_workout_id='peloton-123',
+                ride_title='45 min Hip Hop Ride',
+                calories=385,
+                workout_log_id=ride_log.id,
+            ))
+            # incomplete log: must be excluded
+            db.session.add(WorkoutLog(
+                user_id=user.id,
+                custom_name='In Progress',
+                started_at=datetime.now(timezone.utc),
+                completed_at=None,
+            ))
+            self._set_token(app, user.id, 'test-token-123')
+            db.session.commit()
+
+        data, status = self._call_export(app, headers={'Authorization': 'Bearer test-token-123'})
+        assert status == 200
+        assert 'now' in data
+        workouts = data['workouts']
+        assert len(workouts) == 2  # incomplete excluded
+
+        strength, ride = workouts[0], workouts[1]  # ascending by start
+        assert strength['name'] == 'Push Day'
+        assert strength['hk_type'] == 'traditional_strength_training'
+        assert strength['duration_minutes'] == 45
+        assert strength['calories'] is None
+        # user timezone is America/New_York — timestamps carry a UTC offset
+        assert strength['start'][-6] in '+-'
+
+        assert ride['name'] == '45 min Hip Hop Ride'
+        assert ride['hk_type'] == 'cycling'
+        assert ride['calories'] == 385
+
+    def test_export_auth_token(self, app, user):
+        with app.app_context():
+            self._add_completed_log(user.id, 'Any', days_ago=1)
+            self._set_token(app, user.id, 'secret-token')
+            db.session.commit()
+
+        # valid Bearer token
+        data, status = self._call_export(app, headers={'Authorization': 'Bearer secret-token'})
+        assert status == 200
+        assert len(data['workouts']) == 1
+
+        # wrong token
+        data, status = self._call_export(app, headers={'Authorization': 'Bearer wrong'})
+        assert status == 401
+
+        # no auth at all
+        data, status = self._call_export(app)
+        assert status == 401
+
+    def test_export_since_filter_and_now(self, app, user):
+        from datetime import datetime as dt
+        with app.app_context():
+            old_log = self._add_completed_log(user.id, 'Old', days_ago=40)
+            recent_log = self._add_completed_log(user.id, 'Recent', days_ago=5)
+            self._set_token(app, user.id, 'tok')
+            db.session.commit()
+
+        headers = {'Authorization': 'Bearer tok'}
+
+        # default window (30 days) excludes the 40-day-old log
+        data, _ = self._call_export(app, headers=headers)
+        names = [w['name'] for w in data['workouts']]
+        assert names == ['Recent']
+
+        # explicit since includes both
+        since = (dt.now(timezone.utc) - __import__('datetime').timedelta(days=60)).date().isoformat()
+        data, _ = self._call_export(app, query_string={'since': since}, headers=headers)
+        names = [w['name'] for w in data['workouts']]
+        assert names == ['Old', 'Recent']
+
+        # now is captured at request start and is a valid local ISO timestamp
+        now = dt.fromisoformat(data['now'])
+        assert now.utcoffset() is not None
+        assert abs((dt.now(timezone.utc) - now.astimezone(timezone.utc)).total_seconds()) < 60
+
+        # invalid since -> 400
+        _, status = self._call_export(app, query_string={'since': 'not-a-date'}, headers=headers)
+        assert status == 400

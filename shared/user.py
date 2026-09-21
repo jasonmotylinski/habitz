@@ -33,6 +33,9 @@ class User(UserMixin, db.Model):
     # user timezone (IANA timezone name)
     timezone = db.Column(db.String(50), default='America/New_York')
 
+    # workout_tracker: Apple Health export Bearer token (iOS Shortcuts auth)
+    apple_health_token = db.Column(db.String(64), unique=True, nullable=True)
+
     # workout_tracker relationships (string refs resolved lazily at mapper config time)
     programs = db.relationship("Program", backref="user", lazy="dynamic")
     workouts = db.relationship("Workout", backref="user", lazy="dynamic")
