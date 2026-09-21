@@ -1148,7 +1148,9 @@ class TestAppleHealthExport:
         db.session.flush()
         return log
 
-    def test_export_maps_peloton_and_strength_workouts(self, app, user, exercise):
+    def test_export_excludes_peloton_linked_and_incomplete_logs(self, app, user, exercise):
+        """Strength logs export; Peloton-linked logs (rides reach HealthKit via
+        the Peloton app's native sync) and incomplete logs must be excluded."""
         with app.app_context():
             # strength log (has a strength set)
             strength_log = self._add_completed_log(user.id, 'Push Day', start_offset_minutes=45)
@@ -1161,7 +1163,7 @@ class TestAppleHealthExport:
                 weight=225.0,
                 completed=True,
             ))
-            # peloton-linked log
+            # peloton-linked log: excluded (native Peloton -> HealthKit sync)
             ride_log = self._add_completed_log(user.id, 'Ride', start_offset_minutes=30)
             db.session.add(PelotonWorkout(
                 user_id=user.id,
@@ -1184,9 +1186,10 @@ class TestAppleHealthExport:
         assert status == 200
         assert 'now' in data
         workouts = data['workouts']
-        assert len(workouts) == 2  # incomplete excluded
+        # incomplete excluded; Peloton-linked excluded (no duplicate rides)
+        assert len(workouts) == 1
 
-        strength, ride = workouts[0], workouts[1]  # ascending by start
+        strength = workouts[0]
         assert strength['name'] == 'Push Day'
         assert strength['hk_type'] == 'traditional_strength_training'
         assert strength['duration_minutes'] == 45
@@ -1194,9 +1197,9 @@ class TestAppleHealthExport:
         # user timezone is America/New_York — timestamps carry a UTC offset
         assert strength['start'][-6] in '+-'
 
-        assert ride['name'] == '45 min Hip Hop Ride'
-        assert ride['hk_type'] == 'cycling'
-        assert ride['calories'] == 385
+        names = [w['name'] for w in workouts]
+        assert '45 min Hip Hop Ride' not in names
+        assert 'In Progress' not in names
 
     def test_export_auth_token(self, app, user):
         with app.app_context():

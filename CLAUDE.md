@@ -132,7 +132,7 @@ Cron job runs daily at 6:00 AM. Imports completed Peloton cycling workouts using
 
 ## Apple Health Export
 
-`GET /workouts/api/export/apple-health` (workout_tracker `api/export.py`) returns completed workouts as JSON for an iOS Shortcut to log into Apple Health. Auth: session cookie OR `Authorization: Bearer <token>` using `user.apple_health_token` (set via `scripts/generate_health_token.py`, one token per user). Supports `?since=<ISO date>` (default last 30 days) — the Shortcut stores its own cursor and saves the response's `now` immediately post-fetch (lose-on-crash beats duplicates). See README.md for the Shortcut build steps.
+`GET /workouts/api/export/apple-health` (workout_tracker `api/export.py`) returns completed Habitz-logged workouts as JSON for an iOS Shortcut to log into Apple Health. **Peloton-imported workouts (logs linked to a `PelotonWorkout` row) are excluded** — the Peloton app syncs rides to HealthKit natively and this export must not duplicate them. Auth: session cookie OR `Authorization: Bearer <token>` using `user.apple_health_token` (set via `scripts/generate_health_token.py`, one token per user). Supports `?since=<ISO date>` (default last 30 days) — the Shortcut stores its own cursor and saves the response's `now` immediately post-fetch (lose-on-crash beats duplicates). See README.md for the Shortcut build steps.
 
 Production token generation (DB is root-owned; re-running invalidates the old token):
 `sudo /var/projects/habitz/venv/bin/python /var/projects/habitz/scripts/generate_health_token.py <email> --db /var/projects/habitz/instance/habitz.db`
@@ -162,6 +162,7 @@ Habitz production runs on the **rawkit-01** server (ssh alias `rawkit-01`, IP `5
 
 - **App dir:** `/var/projects/habitz` — the git repo root, same layout as local `habitz/habitz/` (contains `wsgi.py`, `run.py`, `migrations/`, `scripts/`, `instance/`, `venv/`)
 - **Service:** systemd unit `habitz` running gunicorn via `scripts/prod/server.sh` (unix socket `/run/habitz.sock`)
+- **Public URL:** `https://habitz.fit` (nginx on 80/443 → habitz socket; vhost at `/etc/nginx/sites-available/habitz.conf`)
 - **Production DB:** `/var/projects/habitz/instance/habitz.db` (root-owned — read with `sudo sqlite3` over ssh)
 - **Deploy:** `scripts/prod/deploy.sh` on the server (git pull → tests → migrations → restart)
 - **Auto-deploy:** Pushing to `main` triggers a GitHub Actions workflow that runs `deploy.sh` on rawkit-01 automatically — no manual SSH deploy needed.

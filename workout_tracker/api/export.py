@@ -68,12 +68,14 @@ def export_apple_health():
     )
 
     log_ids = [log.id for log in logs]
-    peloton_by_log = {
-        p.workout_log_id: p
+    # Peloton-imported rides are excluded: the Peloton app syncs them to
+    # HealthKit natively, and logging them here would duplicate every ride.
+    peloton_linked = {
+        p.workout_log_id
         for p in PelotonWorkout.query.filter(
             PelotonWorkout.workout_log_id.in_(log_ids)
         ).all()
-    } if log_ids else {}
+    } if log_ids else set()
 
     def iso_local(dt):
         return _aware_utc(dt).astimezone(tz).isoformat()
@@ -85,16 +87,13 @@ def export_apple_health():
         if started < since_dt:
             continue
 
-        peloton = peloton_by_log.get(log.id)
-        if peloton:
-            hk_type = "cycling"
-            name = peloton.ride_title or log.custom_name or (log.workout.name if log.workout_id else "Ride")
-            calories = peloton.calories
-        else:
-            is_strength = any(s.exercise.type == "strength" for s in log.sets)
-            hk_type = "traditional_strength_training" if is_strength else "functional_strength_training"
-            name = log.custom_name or (log.workout.name if log.workout_id else "Workout")
-            calories = None
+        if log.id in peloton_linked:
+            continue
+
+        is_strength = any(s.exercise.type == "strength" for s in log.sets)
+        hk_type = "traditional_strength_training" if is_strength else "functional_strength_training"
+        name = log.custom_name or (log.workout.name if log.workout_id else "Workout")
+        calories = None
 
         workouts.append({
             "name": name,

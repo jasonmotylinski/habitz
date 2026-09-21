@@ -77,11 +77,11 @@ python scripts/generate_health_token.py you@example.com
 1. **Get Contents of URL** — `https://<host>/workouts/api/export/apple-health?since=<cursor>` with header `Authorization: Bearer <token>`
 2. Immediately **Save File** the response's `now` value as your cursor (`last-sync.txt`, iCloud Drive). *Save before logging — if the run crashes mid-loop, you lose workouts rather than duplicate them.*
 3. **Repeat with Each** item in `workouts`:
-   - **Log Workout** — activity type from `hk_type` (`cycling`, `traditional_strength_training`, `functional_strength_training`), duration `duration_minutes`, start date `start`, end date `end`
-   - Energy: only pass `calories` **when not null** (passing 0 writes a bogus sample)
+   - **Log Workout** — activity type from `hk_type` (`traditional_strength_training`, `functional_strength_training`), start date `start`, end date `end`, duration `duration_minutes`
+   - Energy: only pass `calories` **when not null** (passing 0 writes a bogus sample). Habitz doesn't capture calories for strength workouts yet, so energy is normally omitted.
 4. On first run, set `<cursor>` empty or `1970-01-01` (defaults to the last 30 days)
 
-The server is stateless: `since` (ISO date, optional) filters by `started_at`; the Shortcut owns the cursor. Only completed workouts are returned, oldest first. Sets/reps/weights are not exported (HealthKit's workout model is duration + energy only).
+The server is stateless: `since` (ISO date, optional) filters by `started_at`; the Shortcut owns the cursor. Only completed workouts are returned, oldest first. **Peloton-imported workouts are excluded** — the Peloton app syncs rides to Apple Health natively, and this export must not duplicate them. Sets/reps/weights are not exported (Shortcuts' Log Workout accepts type, dates, distance and energy only).
 
 ## Project structure
 
