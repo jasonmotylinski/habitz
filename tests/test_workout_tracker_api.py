@@ -1246,3 +1246,22 @@ class TestAppleHealthExport:
         # invalid since -> 400
         _, status = self._call_export(app, query_string={'since': 'not-a-date'}, headers=headers)
         assert status == 400
+
+    def test_export_clamps_negative_duration_to_zero(self, app, user):
+        """completed_at slightly before started_at (manual-log clock skew) must
+        yield duration_minutes 0, not -1 (floor division of a tiny negative)."""
+        timedelta = __import__('datetime').timedelta
+        with app.app_context():
+            now = datetime.now(timezone.utc)
+            db.session.add(WorkoutLog(
+                user_id=user.id,
+                custom_name='Hotel',
+                started_at=now,
+                completed_at=now - timedelta(milliseconds=2),
+            ))
+            self._set_token(app, user.id, 'tok-skew')
+            db.session.commit()
+
+        data, status = self._call_export(app, headers={'Authorization': 'Bearer tok-skew'})
+        assert status == 200
+        assert data['workouts'][0]['duration_minutes'] == 0

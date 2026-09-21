@@ -101,7 +101,9 @@ def export_apple_health():
             "hk_type": hk_type,
             "start": iso_local(started),
             "end": iso_local(completed),
-            "duration_minutes": int((completed - started).total_seconds() // 60),
+            # floor-div of a tiny negative skew (completed_at just before
+            # started_at, seen in manually-logged workouts) yields -1 — clamp to 0
+            "duration_minutes": max(0, int((completed - started).total_seconds() // 60)),
             "calories": calories,
         })
 
