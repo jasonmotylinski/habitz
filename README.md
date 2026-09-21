@@ -62,6 +62,27 @@ See `.env.example` for the full list. Required:
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Budget Tracker (path to service account key file) |
 | `GOOGLE_SHEET_ID` | Budget Tracker (spreadsheet ID from the budgetz sheet) |
 
+## Apple Health Export
+
+The workout tracker exposes `GET /workouts/api/export/apple-health` for syncing completed workouts to Apple Health via an iOS Shortcut.
+
+**1. Generate an auth token** (re-running invalidates the old token):
+
+```bash
+python scripts/generate_health_token.py you@example.com
+```
+
+**2. Build the iOS Shortcut** (~10 steps):
+
+1. **Get Contents of URL** — `https://<host>/workouts/api/export/apple-health?since=<cursor>` with header `Authorization: Bearer <token>`
+2. Immediately **Save File** the response's `now` value as your cursor (`last-sync.txt`, iCloud Drive). *Save before logging — if the run crashes mid-loop, you lose workouts rather than duplicate them.*
+3. **Repeat with Each** item in `workouts`:
+   - **Log Workout** — activity type from `hk_type` (`cycling`, `traditional_strength_training`, `functional_strength_training`), duration `duration_minutes`, start date `start`, end date `end`
+   - Energy: only pass `calories` **when not null** (passing 0 writes a bogus sample)
+4. On first run, set `<cursor>` empty or `1970-01-01` (defaults to the last 30 days)
+
+The server is stateless: `since` (ISO date, optional) filters by `started_at`; the Shortcut owns the cursor. Only completed workouts are returned, oldest first. Sets/reps/weights are not exported (HealthKit's workout model is duration + energy only).
+
 ## Project structure
 
 ```

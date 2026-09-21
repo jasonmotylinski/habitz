@@ -128,6 +128,11 @@ Cron job runs daily at 6:00 AM. Imports completed Peloton cycling workouts using
 | `reset_password.py` | Reset a user's password by email (case-insensitive lookup) |
 | `add_timezone_column.py` | One-time migration: adds `timezone` column to `user` table |
 | `migrate_to_habitz_db.py` | Original migration from 4 separate DBs to unified `habitz.db` |
+| `generate_health_token.py` | Generate/regenerate the Apple Health export Bearer token for a user |
+
+## Apple Health Export
+
+`GET /workouts/api/export/apple-health` (workout_tracker `api/export.py`) returns completed workouts as JSON for an iOS Shortcut to log into Apple Health. Auth: session cookie OR `Authorization: Bearer <token>` using `user.apple_health_token` (set via `scripts/generate_health_token.py`, one token per user). Supports `?since=<ISO date>` (default last 30 days) — the Shortcut stores its own cursor and saves the response's `now` immediately post-fetch (lose-on-crash beats duplicates). See README.md for the Shortcut build steps.
 
 ## Bug Fixes
 
