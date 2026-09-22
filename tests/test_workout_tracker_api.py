@@ -977,10 +977,17 @@ class TestWorkoutFrequency:
             assert data[-1]['count'] >= 1
 
     def test_counts_multiple_workouts_in_same_week(self, app, user):
-        """Multiple workouts in the same week are counted correctly."""
+        """Multiple workouts in the same week are counted correctly.
+
+        Use the last Sunday and the Saturday before it: always the same ISO
+        week regardless of when the test runs. Fixed offsets (1 and 3) straddle
+        the Monday 00:00 ISO boundary on Tue/Wed and made deploys flaky
+        ("assert 1 >= 2" when the server clock is UTC).
+        """
         with app.app_context():
-            self._add_completed_log(user.id, days_ago=1)
-            self._add_completed_log(user.id, days_ago=3)
+            weekday = datetime.utcnow().weekday()
+            self._add_completed_log(user.id, days_ago=weekday + 1)  # last Sunday
+            self._add_completed_log(user.id, days_ago=weekday + 2)  # last Saturday
             db.session.commit()
             data = self._get_weekly_counts(user.id)
             max_count = max(d['count'] for d in data)
