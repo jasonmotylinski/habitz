@@ -340,12 +340,19 @@ async function showDayDetail(dateStr) {
     }
 }
 
+// Duration synced to Apple Health — shared WorkoutLog.sync_duration_minutes()
+// (must match workout_tracker/api/export.py exactly)
+function durationBadge(log) {
+    if (log.duration_minutes == null) return '';
+    return ` · ${log.duration_minutes} min`;
+}
+
 function renderDayLogs(container, logs, dateStr) {
     container.innerHTML = logs.map(log => `
         <div class="history-entry">
             <div class="history-entry-header">
                 <h3>${log.workout_name}</h3>
-                <span class="date">${formatDate(log.started_at)}</span>
+                <span class="date">${formatDate(log.started_at)}${durationBadge(log)}</span>
             </div>
         </div>
     `).join('');
@@ -420,7 +427,7 @@ function renderHistoryList() {
                 <div class="history-entry-header">
                     <div style="flex: 1;">
                         <h3>${log.workout_name}</h3>
-                        <span class="date">${formatDate(log.started_at)}</span>
+                        <span class="date">${formatDate(log.started_at)}${durationBadge(log)}</span>
                     </div>
                 </div>
                 ${exerciseRows}

@@ -165,6 +165,7 @@ Habitz production runs on the **rawkit-01** server (ssh alias `rawkit-01`, IP `5
 - **Public URL:** `https://habitz.fit` (nginx on 80/443 → habitz socket; vhost at `/etc/nginx/sites-available/habitz.conf`)
 - **Production DB:** `/var/projects/habitz/instance/habitz.db` (root-owned — read with `sudo sqlite3` over ssh)
 - **Deploy:** `scripts/prod/deploy.sh` on the server (git pull → tests → migrations → restart)
+- **nginx logs:** per-vhost files in `/var/log/nginx/` (`habitz.access.log`, `habitz.error.log`, plus one pair per site) — grep `habitz.access.log` (or `*.log` glob) for API traffic, NOT the default `access.log`.
 - **Auto-deploy:** Pushing to `main` triggers a GitHub Actions workflow that runs `deploy.sh` on rawkit-01 automatically — no manual SSH deploy needed.
 - **Program structure:** The sole program "Routine" alternates Push → Cardio → Pull → Cardio → Legs → Cardio; the multiple Cardio workout templates (each with their own Peloton exercise rows) are intentional, not duplicates.
 - **Data quirk — cardio undercounted:** Cardio is done on the Peloton app and mostly NOT logged in Habitz. `workout_logs` Cardio rows only capture a fraction of actual rides; assume cardio happens between every PPL workout regardless of what the DB shows.
@@ -185,3 +186,4 @@ Habitz production runs on the **rawkit-01** server (ssh alias `rawkit-01`, IP `5
 - Workout tracker JS uses `window.SCRIPT_ROOT` (injected in `base.html`) to prefix API paths correctly.
 - The unified session cookie means a user logged in at `/` is also logged in at `/meals/`, `/workouts/`, etc.
 - New tables (e.g., `habit`, `habit_log`, `daily_note`, `daily_mood`) are auto-created by `db.create_all()` in `landing/__init__.py`.
+- **Sync duration is computed in one place**: `WorkoutLog.sync_duration_minutes()` in `workout_tracker/models/log.py` — floored at 1 minute because the iOS Shortcuts Log Workout action aborts the whole batch on a zero-duration workout. Used by both the Apple Health export (`workout_tracker/api/export.py`) and the History list/calendar duration display; never recompute it elsewhere.

@@ -1,6 +1,6 @@
 """Tests for workout tracker API endpoints."""
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from workout_tracker.models.program import Program, ProgramWorkoutOrder
 from workout_tracker.models.workout import Workout, WorkoutExercise
 from workout_tracker.models.exercise import Exercise
@@ -1284,3 +1284,38 @@ class TestAppleHealthExport:
         assert status == 200
         assert len(data['workouts']) == 2
         assert all(w['duration_minutes'] == 1 for w in data['workouts'])
+
+
+class TestSyncDurationValue:
+    """The duration shown in the history list/calendar views must be exactly
+    the value the Apple Health export sends (shared WorkoutLog.sync_duration_minutes).
+    """
+
+    def test_sync_duration_floors_at_one_minute(self, app, user):
+        with app.app_context():
+            now = datetime.now(timezone.utc)
+            log = WorkoutLog(user_id=user.id, custom_name='Hotel',
+                             started_at=now, completed_at=now)
+            db.session.add(log)
+            db.session.commit()
+            assert log.sync_duration_minutes() == 1
+            assert log.to_dict()['duration_minutes'] == 1
+
+    def test_sync_duration_exact_minutes(self, app, user):
+        with app.app_context():
+            now = datetime.now(timezone.utc)
+            log = WorkoutLog(user_id=user.id, custom_name='Push',
+                             started_at=now,
+                             completed_at=now + timedelta(minutes=45))
+            db.session.add(log)
+            db.session.commit()
+            assert log.to_dict()['duration_minutes'] == 45
+
+    def test_sync_duration_none_until_completed(self, app, user):
+        with app.app_context():
+            log = WorkoutLog(user_id=user.id, custom_name='Pull',
+                             started_at=datetime.now(timezone.utc))
+            db.session.add(log)
+            db.session.commit()
+            assert log.sync_duration_minutes() is None
+            assert log.to_dict()['duration_minutes'] is None

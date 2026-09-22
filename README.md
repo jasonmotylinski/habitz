@@ -83,6 +83,8 @@ python scripts/generate_health_token.py you@example.com
 
 The server is stateless: `since` (ISO date, optional) filters by `started_at`; the Shortcut owns the cursor. Only completed workouts are returned, oldest first. **Peloton-imported workouts are excluded** — the Peloton app syncs rides to Apple Health natively, and this export must not duplicate them. Sets/reps/weights are not exported (Shortcuts' Log Workout accepts type, dates, distance and energy only).
 
+The History page (list and calendar day detail) shows each workout's duration (`X min`) — exactly the `duration_minutes` the export sends to Apple Health, computed by the shared `WorkoutLog.sync_duration_minutes()` (floored at 1 minute).
+
 ## Project structure
 
 ```

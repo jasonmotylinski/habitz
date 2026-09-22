@@ -106,7 +106,7 @@ def export_apple_health():
             # batch on a zero-duration workout (observed: the import stopped at a
             # same-minute "Hotel" log and dropped every workout after it), so the
             # export floor is 1 minute.
-            "duration_minutes": max(1, int((completed - started).total_seconds() // 60)),
+            "duration_minutes": log.sync_duration_minutes(),
             "calories": calories,
         })
 

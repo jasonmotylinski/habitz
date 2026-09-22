@@ -25,6 +25,21 @@ class WorkoutLog(db.Model):
         order_by="SetLog.id",
     )
 
+    def sync_duration_minutes(self):
+        """Duration sent to Apple Health when this workout syncs.
+
+        1-minute floor because the iOS Log Workout action aborts the whole
+        batch on a zero-duration workout. None while still in progress.
+        """
+        if not self.completed_at:
+            return None
+        started, completed = self.started_at, self.completed_at
+        if started.tzinfo is None and completed.tzinfo is not None:
+            started = started.replace(tzinfo=timezone.utc)
+        elif started.tzinfo is not None and completed.tzinfo is None:
+            completed = completed.replace(tzinfo=timezone.utc)
+        return max(1, int((completed - started).total_seconds() // 60))
+
     def to_dict(self, include_sets=False):
         data = {
             "id": self.id,
@@ -33,6 +48,7 @@ class WorkoutLog(db.Model):
             "workout_name": self.custom_name if self.workout_id is None else self.workout.name,
             "started_at": self.started_at.isoformat(),
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "duration_minutes": self.sync_duration_minutes(),
             "notes": self.notes,
             "body_weight": self.body_weight,
         }
