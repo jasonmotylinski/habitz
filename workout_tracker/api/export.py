@@ -101,8 +101,12 @@ def export_apple_health():
             "start": iso_local(started),
             "end": iso_local(completed),
             # floor-div of a tiny negative skew (completed_at just before
-            # started_at, seen in manually-logged workouts) yields -1 — clamp to 0
-            "duration_minutes": max(0, int((completed - started).total_seconds() // 60)),
+            # started_at, seen in manually-logged workouts) yields -1 — clamp to 1.
+            # Never emit 0: iOS Shortcuts' Log Workout action aborts the whole
+            # batch on a zero-duration workout (observed: the import stopped at a
+            # same-minute "Hotel" log and dropped every workout after it), so the
+            # export floor is 1 minute.
+            "duration_minutes": max(1, int((completed - started).total_seconds() // 60)),
             "calories": calories,
         })
 

@@ -1250,15 +1250,23 @@ class TestAppleHealthExport:
         _, status = self._call_export(app, query_string={'since': 'not-a-date'}, headers=headers)
         assert status == 400
 
-    def test_export_clamps_negative_duration_to_zero(self, app, user):
-        """completed_at slightly before started_at (manual-log clock skew) must
-        yield duration_minutes 0, not -1 (floor division of a tiny negative)."""
+    def test_export_clamps_duration_to_minimum_one(self, app, user):
+        """Zero/negative durations (manual-log "Hotel" row completed within the
+        same minute, plus tiny clock skew) must yield duration_minutes 1, never 0
+        — the iOS Shortcuts Log Workout action aborts the whole batch on a
+        zero-duration workout, silently dropping every workout after it."""
         timedelta = __import__('datetime').timedelta
         with app.app_context():
             now = datetime.now(timezone.utc)
             db.session.add(WorkoutLog(
                 user_id=user.id,
                 custom_name='Hotel',
+                started_at=now,
+                completed_at=now,
+            ))
+            db.session.add(WorkoutLog(
+                user_id=user.id,
+                custom_name='Skew',
                 started_at=now,
                 completed_at=now - timedelta(milliseconds=2),
             ))
@@ -1267,4 +1275,5 @@ class TestAppleHealthExport:
 
         data, status = self._call_export(app, headers={'Authorization': 'Bearer tok-skew'})
         assert status == 200
-        assert data['workouts'][0]['duration_minutes'] == 0
+        assert len(data['workouts']) == 2
+        assert all(w['duration_minutes'] == 1 for w in data['workouts'])
