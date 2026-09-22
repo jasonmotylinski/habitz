@@ -36,8 +36,8 @@ jobs:
           DATABASE_URL: 'sqlite:///:memory:'
           FLASK_ENV: testing
         run: |
-          set -o pipefail  # don't let head mask pytest failures
-          pytest tests/ -v --tb=short -s 2>&1 | head -200
+          # no pipes here: head truncation SIGPIPE-kills pytest and pipefail turns that into a red build
+          pytest tests/ -v --tb=short -s 2>&1
       
       - name: Check if package.json exists
         id: package_check
