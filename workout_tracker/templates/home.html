@@ -22,7 +22,13 @@
         <h2 id="welcome-title">Welcome back!</h2>
         <p id="program-name-display"></p>
     </div>
-    <div id="upcoming-workouts"></div>
+    <div id="upcoming-workouts">
+        <div class="loading-container">
+            <div class="skeleton skeleton-title"></div>
+            <div class="skeleton skeleton-row"></div>
+            <div class="skeleton skeleton-row"></div>
+        </div>
+    </div>
 </div>
 
 <a href="{{ url_for('views.quick_log') }}" class="fab">

@@ -2,27 +2,33 @@
 {% block title %}Workout - Workout Tracker{% endblock %}
 
 {% block body %}
-<div class="container" style="padding-top: env(safe-area-inset-top); padding-bottom: calc(76px + env(safe-area-inset-bottom));">
+<div class="container active-workout-container">
     <div class="page-header">
         <button class="back-btn" onclick="confirmExit()">‹ Back</button>
-        <div style="flex: 1; display: flex; justify-content: center;">
-            <select id="workout-selector" class="form-control" style="max-width: 200px; padding: 6px 10px; font-size: 0.95rem; font-weight: 600;" onchange="changeWorkout(this.value)">
+        <div class="workout-selector-wrap">
+            <select id="workout-selector" class="form-control workout-selector" onchange="changeWorkout(this.value)">
                 <option value="">Select workout...</option>
             </select>
         </div>
     </div>
 
-    <div id="exercises-container"></div>
+    <div id="exercises-container">
+        <div class="loading-container">
+            <div class="skeleton skeleton-title"></div>
+            <div class="skeleton skeleton-text skeleton-w-80"></div>
+            <div class="skeleton skeleton-text skeleton-w-60"></div>
+        </div>
+    </div>
 
     <div class="card mt-4">
-        <div class="form-group" style="margin-bottom: 0;">
+        <div class="form-group mb-0">
             <label>Body Weight (lb)</label>
             <input type="number" id="body-weight" class="form-control" step="0.1" placeholder="Optional">
         </div>
     </div>
 
     <div class="card mt-2">
-        <div class="form-group" style="margin-bottom: 0;">
+        <div class="form-group mb-0">
             <label>Notes</label>
             <textarea id="notes" class="form-control" rows="2" placeholder="Optional workout notes"></textarea>
         </div>
@@ -30,8 +36,8 @@
 </div>
 
 <div class="timer-bar">
-    <span class="time" id="rest-time" style="display: none;">Rest 0:00</span>
-    <button class="btn btn-success" onclick="confirmFinishWorkout()" style="margin-left: auto;">Finish Workout</button>
+    <span class="time hidden" id="rest-time">Rest 0:00</span>
+    <button class="btn btn-success" onclick="confirmFinishWorkout()">Finish Workout</button>
 </div>
 {% endblock %}
 
@@ -161,17 +167,15 @@ function renderExercises() {
                 <div class="exercise-block-header">
                     <h3>${ex.name}</h3>
                     <span class="detail">Cardio</span>
-                    <a href="${SCRIPT_ROOT}/exercises/${exId}/progress?from=active" class="chart-link" title="View progress">📈</a>
+                    <a href="${SCRIPT_ROOT}/exercises/${exId}/progress?from=active" class="chart-link" title="View progress"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></a>
                 </div>
                 <div class="cardio-input">
                     <input type="number" class="form-control" value="${set.duration_minutes || 30}"
-                           style="width: 80px; text-align: center;"
                            onchange="updateCardioSet(${set.id}, this.value)">
                     <span class="text-muted">minutes</span>
                     <div class="set-circle ${set.completed ? 'completed' : ''}"
-                         onclick="toggleCardioSet(${set.id}, this)"
-                         style="margin-left: auto; width: 36px; height: 36px; font-size: 0.8rem;">
-                        ${set.completed ? '✓' : '–'}
+                         onclick="toggleCardioSet(${set.id}, this)">
+                        ${set.completed ? '<span class="icon-check"></span>' : '<span class="icon-dash"></span>'}
                     </div>
                 </div>
             `;
@@ -185,7 +189,7 @@ function renderExercises() {
                 <div class="exercise-block-header">
                     <h3>${ex.name}</h3>
                     <span class="detail">${setsCount}×${reps}</span>
-                    <a href="${SCRIPT_ROOT}/exercises/${exId}/progress?from=active" class="chart-link" title="View progress">📈</a>
+                    <a href="${SCRIPT_ROOT}/exercises/${exId}/progress?from=active" class="chart-link" title="View progress"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></a>
                 </div>
                 <div class="weight-row">
                     <label class="weight-label">Weight</label>
@@ -194,7 +198,7 @@ function renderExercises() {
                            onchange="updateExerciseWeight(${exId}, this.value)">
                     <span class="weight-unit">lb</span>
                 </div>
-                ${plateauExercises.has(exId) ? `<div class="plateau-nudge">⬆</div>` : ''}
+                ${plateauExercises.has(exId) ? `<div class="plateau-nudge"><span class="icon-arrow-up"></span></div>` : ''}
                 <div class="sets-row">
                     ${ex.sets.map(set => {
                         let cls = '';

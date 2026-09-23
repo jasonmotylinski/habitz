@@ -13,15 +13,22 @@
 </div>
 
 <div id="list-view">
-    <div id="history-list"></div>
+    <div id="history-list">
+        <div class="loading-container">
+            <div class="skeleton skeleton-title"></div>
+            <div class="skeleton skeleton-row"></div>
+            <div class="skeleton skeleton-row"></div>
+            <div class="skeleton skeleton-row"></div>
+        </div>
+    </div>
 </div>
 
 <!-- Edit modal -->
 <div id="edit-modal" class="modal-overlay modal-centered hidden" onclick="if(event.target===this)closeEditModal()">
     <div class="modal">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-            <h2 style="margin:0;">Edit Exercise</h2>
-            <button onclick="closeEditModal()" style="background:none;border:none;font-size:1.4rem;line-height:1;cursor:pointer;color:var(--text-muted);padding:4px 8px;">×</button>
+        <div class="modal-header">
+            <h2>Edit Exercise</h2>
+            <button class="modal-close" onclick="closeEditModal()" aria-label="Close">×</button>
         </div>
         <div id="edit-modal-body"></div>
     </div>
@@ -393,11 +400,11 @@ function renderHistoryList() {
             if (ex.type === 'cardio') {
                 const s = ex.sets[0];
                 const result = s.completed ? `${s.duration_minutes} min` : 'Skipped';
-                return `<div class="history-exercise" onclick="event.stopPropagation(); openEditModal(${log.id}, ${s.id}, '${escapedName}', 'cardio', ${s.duration_minutes}, null)" style="cursor: pointer;">
-                    <span class="name" style="flex: 1;">${ex.name}</span>
+                return `<div class="history-exercise" onclick="event.stopPropagation(); openEditModal(${log.id}, ${s.id}, '${escapedName}', 'cardio', ${s.duration_minutes}, null)">
+                    <span class="name">${ex.name}</span>
                     <span class="${s.completed ? 'result' : 'skipped'}">${result}</span>
                     <span class="history-exercise-actions">
-                        <button class="history-exercise-progress" onclick="event.stopPropagation(); window.location.href=SCRIPT_ROOT+'/exercises/${exerciseId}/progress'" title="View progress">↗</button>
+                        <button class="history-exercise-progress" onclick="event.stopPropagation(); window.location.href=SCRIPT_ROOT+'/exercises/${exerciseId}/progress'" title="View progress"><span class="icon-arrow-out"></span></button>
                         <button class="history-exercise-delete" onclick="event.stopPropagation(); deleteExercise(${log.id}, ${s.id})" title="Delete exercise">×</button>
                     </span>
                 </div>`;
@@ -412,11 +419,11 @@ function renderHistoryList() {
             const allReps = sortedSets.map(s => s.completed ? s.actual_reps : s.planned_reps).join(',');
             const isSkipped = completedSets.length === 0;
             const displayReps = isSkipped ? 'Skipped' : completedSets.map(s => s.actual_reps).join('/');
-            return `<div class="history-exercise" onclick="event.stopPropagation(); openEditModal(${log.id}, ${anySetId}, '${escapedName}', 'strength', null, ${weight}, '${allReps}')" style="cursor: pointer;">
-                <span class="name" style="flex: 1;">${ex.name}</span>
+            return `<div class="history-exercise" onclick="event.stopPropagation(); openEditModal(${log.id}, ${anySetId}, '${escapedName}', 'strength', null, ${weight}, '${allReps}')">
+                <span class="name">${ex.name}</span>
                 <span class="${isSkipped ? 'skipped' : 'result'}">${displayReps}${!isSkipped && weight ? ' ' + weight + 'lb' : ''}</span>
                 <span class="history-exercise-actions">
-                    <button class="history-exercise-progress" onclick="event.stopPropagation(); window.location.href=SCRIPT_ROOT+'/exercises/${exerciseId}/progress'" title="View progress">↗</button>
+                    <button class="history-exercise-progress" onclick="event.stopPropagation(); window.location.href=SCRIPT_ROOT+'/exercises/${exerciseId}/progress'" title="View progress"><span class="icon-arrow-out"></span></button>
                     <button class="history-exercise-delete" onclick="event.stopPropagation(); deleteExercise(${log.id}, ${anySetId})" title="Delete exercise">×</button>
                 </span>
             </div>`;
@@ -425,7 +432,7 @@ function renderHistoryList() {
         return `
             <div class="history-entry${isExpanded ? ' expanded' : ''}" onclick="toggleExpand(${log.id})">
                 <div class="history-entry-header">
-                    <div style="flex: 1;">
+                    <div class="flex-1">
                         <h3>${log.workout_name}</h3>
                         <span class="date">${formatDate(log.started_at)}${durationBadge(log)}</span>
                     </div>
@@ -447,12 +454,12 @@ async function changeWorkoutDate(logId, currentStartedAt) {
     const modal = document.getElementById('edit-modal');
     const body = document.getElementById('edit-modal-body');
     body.innerHTML = `
-        <h3 style="margin-bottom: 1rem;">Change Workout Date</h3>
+        <h3 class="mb-4">Change Workout Date</h3>
         <div class="form-group">
             <label class="form-label">Date</label>
             <input type="date" id="change-date-input" class="form-control" value="${current}">
         </div>
-        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+        <div class="form-row-flex mt-4">
             <button class="btn btn-primary" onclick="saveWorkoutDate(${logId})">Save</button>
             <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
         </div>
@@ -506,12 +513,12 @@ function openEditModal(logId, setId, exerciseName, type, duration, weight, reps)
         body.innerHTML = `
             <div class="form-group">
                 <label>${exerciseName}</label>
-                <div style="display: flex; gap: 10px;">
+                <div class="form-row-flex">
                     <input type="number" id="edit-duration" class="form-control" value="${duration || 0}" step="1">
-                    <span class="text-muted" style="padding-top: 10px;">minutes</span>
+                    <span class="text-muted">minutes</span>
                 </div>
             </div>
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <div class="form-row-flex mt-4">
                 <button class="btn btn-primary" onclick="saveEdit()">Save</button>
                 <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
             </div>
@@ -521,19 +528,19 @@ function openEditModal(logId, setId, exerciseName, type, duration, weight, reps)
         body.innerHTML = `
             <div class="form-group">
                 <label>${exerciseName}</label>
-                <div style="display: flex; gap: 10px;">
+                <div class="form-row-flex">
                     <input type="number" id="edit-weight" class="form-control" value="${weight || 0}" step="0.5" placeholder="Weight">
-                    <span class="text-muted" style="padding-top: 10px;">lb</span>
+                    <span class="text-muted">lb</span>
                 </div>
             </div>
             <div class="form-group">
-                <label>Reps: ${repsArray.map((r, i) => `
-                    <div style="display: inline-block; margin-right: 10px;">
-                        <input type="number" class="form-control" value="${r}" style="width: 50px;" onchange="updateRepAtIndex(${i}, this.value)">
-                    </div>
-                `).join('')}</label>
+                <label>Reps: <span class="rep-inputs-inline">${repsArray.map((r, i) => `
+                    <span class="rep-input-inline">
+                        <input type="number" class="form-control" value="${r}" onchange="updateRepAtIndex(${i}, this.value)">
+                    </span>
+                `).join('')}</span></label>
             </div>
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <div class="form-row-flex mt-4">
                 <button class="btn btn-primary" onclick="saveEdit()">Save</button>
                 <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
             </div>

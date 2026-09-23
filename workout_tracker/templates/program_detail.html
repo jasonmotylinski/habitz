@@ -20,9 +20,9 @@
     <button class="btn btn-primary btn-block" onclick="saveEdit()">Save Changes</button>
 </div>
 
-<div style="display: flex; justify-content: space-between; align-items: center;">
+<div class="workout-header-bar">
     <div class="card-title">Workouts</div>
-    <button class="btn btn-ghost" id="reorder-btn" onclick="toggleReorder()" style="padding: 4px 12px; font-size: 0.8rem;">Reorder</button>
+    <button class="btn btn-ghost btn-sm" id="reorder-btn" onclick="toggleReorder()">Reorder</button>
 </div>
 
 <div id="workouts-list" class="list-group"></div>
@@ -90,15 +90,15 @@ async function loadProgram() {
 function renderReorderMode(workouts) {
     const list = document.getElementById('workouts-list');
     list.innerHTML = `
-        <div id="reorder-list" class="list-group" style="touch-action: none;">
+        <div id="reorder-list" class="list-group reorder-list">
             ${workouts.map((w, i) => `
-                <div class="list-item reorder-item" draggable="true" data-index="${i}" style="cursor: grab;">
-                    <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-                        <svg style="width: 20px; height: 20px; color: var(--text-muted); flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
+                <div class="list-item reorder-item" draggable="true" data-index="${i}">
+                    <div class="reorder-row">
+                        <svg class="reorder-grip" viewBox="0 0 24 24" fill="currentColor">
                             <circle cx="6" cy="7" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="6" cy="17" r="2"/>
                             <circle cx="12" cy="7" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="17" r="2"/>
                         </svg>
-                        <div style="flex: 1;">
+                        <div class="reorder-info">
                             <div class="list-item-title">${w.name}</div>
                             <div class="list-item-subtitle">${(w.exercises || []).join(', ') || 'No exercises'}</div>
                         </div>
@@ -149,7 +149,7 @@ function toggleReorder() {
         btn.textContent = 'Done';
         btn.classList.remove('btn-ghost');
         btn.classList.add('btn-primary');
-        document.getElementById('edit-btn').style.display = 'none';
+        document.getElementById('edit-btn').classList.add('hidden');
         loadProgram();
     } else {
         saveReorderAndClose();
@@ -170,7 +170,7 @@ async function saveReorderAndClose() {
         document.getElementById('reorder-btn').textContent = 'Reorder';
         document.getElementById('reorder-btn').classList.remove('btn-primary');
         document.getElementById('reorder-btn').classList.add('btn-ghost');
-        document.getElementById('edit-btn').style.display = '';
+        document.getElementById('edit-btn').classList.remove('hidden');
         showToast('Workout order updated', 'success');
     } catch (err) {
         showToast(err.message, 'error');
@@ -214,7 +214,7 @@ async function showAddWorkout() {
         container.innerHTML = `
             <label class="text-sm text-muted">Existing workouts</label>
             ${available.map(w => `
-                <div class="list-item" style="padding: 10px 0; border-bottom: 1px solid var(--border);"
+                <div class="list-item available-workout-item"
                      onclick="selectWorkout(${w.id}, this)" id="aw-${w.id}">
                     <span>${w.name}</span>
                 </div>
@@ -229,8 +229,8 @@ async function showAddWorkout() {
 }
 
 function selectWorkout(id, el) {
-    document.querySelectorAll('#available-workouts .list-item').forEach(e => e.style.background = '');
-    el.style.background = 'var(--accent-dim)';
+    document.querySelectorAll('#available-workouts .available-workout-item').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
     selectedWorkoutId = id;
     document.getElementById('new-workout-name').value = '';
 }

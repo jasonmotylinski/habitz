@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-header">
     <button class="back-btn" onclick="goBack()">‹ Back</button>
-    <h1 id="exercise-name" style="font-size: 1.1rem;"></h1>
+    <h1 id="exercise-name" class="exercise-progress-title"></h1>
 </div>
 
 <div id="stats-section" class="hidden mb-4">
@@ -18,7 +18,7 @@
 <div id="chart-section" class="hidden mb-4">
     <div class="card">
         <div class="card-title">Progress</div>
-        <canvas id="progress-chart" style="max-height: 220px;"></canvas>
+        <canvas id="progress-chart" class="chart-canvas"></canvas>
     </div>
 </div>
 
@@ -54,21 +54,21 @@ async function loadProgress() {
             statsSection.classList.remove('hidden');
             if (data.pr) {
                 prDisplay.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border);">
+                    <div class="progress-stat-row">
                         <span class="text-muted">Personal Record</span>
-                        <span style="font-weight: 600;">${data.pr} lb</span>
+                        <span class="progress-pill-value">${data.pr} lb</span>
                     </div>
                 `;
             }
             if (data.recent_weights && data.recent_weights.length) {
                 recentDisplay.innerHTML = `
-                    <div style="padding: 10px 0;">
-                        <div class="text-muted text-sm" style="margin-bottom: 6px;">Recent Weights</div>
-                        <div style="display: flex; gap: 8px;">
+                    <div class="progress-pills">
+                        <div class="text-muted text-sm progress-pills-label">Recent Weights</div>
+                        <div class="progress-pill-grid">
                             ${data.recent_weights.map((w, i) => `
-                                <div style="flex: 1; text-align: center; padding: 8px; background: var(--bg-secondary); border-radius: 6px;">
-                                    <div class="text-sm text-muted">#${i + 1}</div>
-                                    <div style="font-weight: 600;">${w}lb</div>
+                                <div class="progress-pill">
+                                    <div class="progress-pill-rank">#${i + 1}</div>
+                                    <div class="progress-pill-value">${w}lb</div>
                                 </div>
                             `).join('')}
                         </div>
@@ -79,13 +79,13 @@ async function loadProgress() {
             statsSection.classList.remove('hidden');
             if (data.recent_durations && data.recent_durations.length) {
                 recentDisplay.innerHTML = `
-                    <div style="padding: 10px 0;">
-                        <div class="text-muted text-sm" style="margin-bottom: 6px;">Recent Sessions</div>
-                        <div style="display: flex; gap: 8px;">
+                    <div class="progress-pills">
+                        <div class="text-muted text-sm progress-pills-label">Recent Sessions</div>
+                        <div class="progress-pill-grid">
                             ${data.recent_durations.map((d, i) => `
-                                <div style="flex: 1; text-align: center; padding: 8px; background: var(--bg-secondary); border-radius: 6px;">
-                                    <div class="text-sm text-muted">#${i + 1}</div>
-                                    <div style="font-weight: 600;">${d} min</div>
+                                <div class="progress-pill">
+                                    <div class="progress-pill-rank">#${i + 1}</div>
+                                    <div class="progress-pill-value">${d} min</div>
                                 </div>
                             `).join('')}
                         </div>
@@ -187,7 +187,7 @@ async function loadProgress() {
                             <span class="date">${formatDate(session.date)}</span>
                         </div>
                         <div class="history-exercise">
-                            <span class="name">${set.completed ? '✓' : '✗'}</span>
+                            <span class="name">${set.completed ? '<span class="icon-check"></span>' : '<span class="icon-cross"></span>'}</span>
                             <span class="${set.completed ? 'result' : 'skipped'}">${result}</span>
                         </div>
                     </div>
@@ -202,9 +202,9 @@ async function loadProgress() {
                         ${session.sets.map(set => {
                             let status = '';
                             if (set.completed) {
-                                status = set.actual_reps === set.planned_reps ? '✓' : '◐';
+                                status = set.actual_reps === set.planned_reps ? '<span class="icon-check"></span>' : '<span class="icon-partial"></span>';
                             } else {
-                                status = '✗';
+                                status = '<span class="icon-cross"></span>';
                             }
                             const repsText = `${set.actual_reps}/${set.planned_reps} reps`;
                             const weightText = set.weight ? ` @ ${set.weight}lb` : '';
