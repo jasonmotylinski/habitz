@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Platform Overview
 
-Habitz is a unified wellness platform. The primary entry point is `habitz/habitz/` — a single-process WSGI app that mounts all sub-apps under one domain. The four original standalone apps in the repo root subdirectories (`meal-planner/`, `workout-tracker/`, etc.) are **not used in production**; the unified app is the live system.
+Habitz is a unified wellness platform. The primary entry point is `habitz/habitz/` — a single-process WSGI app that mounts all sub-apps under one domain. The original standalone apps (`meal-planner/`, `workout-tracker/`, etc.) were removed from the repo — only the unified app exists.
 
 ## Unified App: `habitz/habitz/`
 
@@ -95,11 +95,11 @@ Key columns on `User`:
 - `default_fast_hours` (fasting tracker)
 - `timezone` — IANA timezone string, default `'America/New_York'`
 
-**Note:** The `timezone` column was added after initial deployment. Run `python scripts/add_timezone_column.py` on any existing database that pre-dates this column.
+**Note:** The `timezone` column is managed by Flask-Migrate (revision `5ee16f998d22`).
 
-## Meal Planner Auth (`meal_planner/auth.py`)
+## Auth
 
-The meal planner has its own `auth_bp` with `/login`, `/register`, `/logout` routes — usable standalone without the landing page login. It uses the same `habitz.db` user table.
+Auth lives only in `landing/auth.py` (`/login`, `/register`, `/logout` at the domain root). Sub-apps share the `habitz_session` cookie; unauthorized users are redirected to `/login?next=...`.
 
 ## Recipe Import (`meal_planner/jobs/process_pending_recipes.py`)
 
@@ -126,8 +126,6 @@ Cron job runs daily at 6:00 AM. Imports completed Peloton cycling workouts using
 | Script | Purpose |
 |--------|---------|
 | `reset_password.py` | Reset a user's password by email (case-insensitive lookup) |
-| `add_timezone_column.py` | One-time migration: adds `timezone` column to `user` table |
-| `migrate_to_habitz_db.py` | Original migration from 4 separate DBs to unified `habitz.db` |
 | `generate_health_token.py` | Generate/regenerate the Apple Health export Bearer token for a user |
 
 ## Apple Health Export

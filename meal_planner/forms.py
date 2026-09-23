@@ -1,47 +1,7 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
-from wtforms import StringField, PasswordField, SubmitField, TextAreaField, SelectField, IntegerField, URLField
-from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError, Optional, URL
-from .models import User
-
-class RegistrationForm(FlaskForm):
-    """Form for user registration"""
-    username = StringField('Username', validators=[
-        DataRequired(),
-        Length(min=3, max=80, message='Username must be between 3 and 80 characters')
-    ])
-    email = StringField('Email', validators=[
-        DataRequired(),
-        Email()
-    ])
-    password = PasswordField('Password', validators=[
-        DataRequired(),
-        Length(min=6, message='Password must be at least 6 characters')
-    ])
-    password_confirm = PasswordField('Confirm Password', validators=[
-        DataRequired(),
-        EqualTo('password', message='Passwords must match')
-    ])
-    submit = SubmitField('Register')
-
-    def validate_username(self, field):
-        """Check if username already exists"""
-        if User.query.filter_by(username=field.data).first():
-            raise ValidationError('Username already exists')
-
-    def validate_email(self, field):
-        """Check if email already exists"""
-        if User.query.filter_by(email=field.data).first():
-            raise ValidationError('Email already registered')
-
-class LoginForm(FlaskForm):
-    """Form for user login"""
-    email = StringField('Email', validators=[
-        DataRequired(),
-        Email()
-    ])
-    password = PasswordField('Password', validators=[DataRequired()])
-    submit = SubmitField('Login')
+from wtforms import StringField, SubmitField, TextAreaField, SelectField, URLField
+from wtforms.validators import DataRequired, Length, Optional, URL
 
 class MealForm(FlaskForm):
     """Form for creating/editing meals"""

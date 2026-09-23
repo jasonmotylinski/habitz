@@ -1,7 +1,8 @@
 """Tests for meal planner API endpoints."""
 import pytest
+import secrets
 from datetime import datetime, date, timedelta
-from meal_planner.models import Household, Meal, MealPlan, ShoppingList, ShoppingListItem, HouseholdInvite, ApiKey
+from meal_planner.models import Household, Meal, MealPlan, ShoppingList, ShoppingListItem, HouseholdInvite
 from shared import db
 from shared.user import User
 
@@ -346,7 +347,7 @@ class TestHouseholdInvites:
                 created_by=user.id,
                 expires_at=expires
             )
-            invite.token = ApiKey.generate_key()
+            invite.token = secrets.token_urlsafe(32)
             db.session.add(invite)
             db.session.commit()
 
@@ -364,7 +365,7 @@ class TestHouseholdInvites:
                 expires_at=expires_valid,
                 accepted=False
             )
-            valid_invite.token = ApiKey.generate_key()
+            valid_invite.token = secrets.token_urlsafe(32)
             db.session.add(valid_invite)
             db.session.commit()
 
@@ -380,7 +381,7 @@ class TestHouseholdInvites:
                 expires_at=expires_past,
                 accepted=False
             )
-            expired.token = ApiKey.generate_key()
+            expired.token = secrets.token_urlsafe(32)
             db.session.add(expired)
             db.session.commit()
 
@@ -397,7 +398,7 @@ class TestHouseholdInvites:
                 expires_at=expires,
                 accepted=False
             )
-            invite.token = ApiKey.generate_key()
+            invite.token = secrets.token_urlsafe(32)
             db.session.add(invite)
             db.session.commit()
 
@@ -409,42 +410,3 @@ class TestHouseholdInvites:
 
             assert invite.accepted is True
 
-
-class TestApiKeys:
-    """Tests for API key management."""
-
-    def test_generate_api_key(self, app, user):
-        """Test generating an API key."""
-        with app.app_context():
-            key = ApiKey.generate_key()
-            assert isinstance(key, str)
-            assert len(key) > 20
-
-    def test_create_api_key(self, app, user):
-        """Test creating an API key for user."""
-        with app.app_context():
-            api_key = ApiKey(
-                user_id=user.id,
-                name='Mobile App',
-                key=ApiKey.generate_key()
-            )
-            db.session.add(api_key)
-            db.session.commit()
-
-            assert api_key.id is not None
-            assert api_key.is_active is True
-
-    def test_deactivate_api_key(self, app, user):
-        """Test deactivating an API key."""
-        with app.app_context():
-            api_key = ApiKey(
-                user_id=user.id,
-                key=ApiKey.generate_key()
-            )
-            db.session.add(api_key)
-            db.session.commit()
-
-            api_key.is_active = False
-            db.session.commit()
-
-            assert api_key.is_active is False

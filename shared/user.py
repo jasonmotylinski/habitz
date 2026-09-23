@@ -63,7 +63,6 @@ class User(UserMixin, db.Model):
         'Meal', secondary='meal_favorites', lazy='dynamic',
         backref=db.backref('favorited_by', lazy='dynamic'),
     )
-    api_keys = db.relationship('ApiKey', backref='user')
 
     # --- auth ---
 

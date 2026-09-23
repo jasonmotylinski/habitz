@@ -1,5 +1,4 @@
 from datetime import datetime
-import secrets
 
 from shared import db
 from shared.user import User  # noqa: F401 – re-exported for sub-app imports
@@ -53,24 +52,6 @@ class HouseholdInvite(db.Model):
     def __repr__(self):
         return f'<HouseholdInvite {self.token[:8]}... for {self.household.name}>'
 
-
-class ApiKey(db.Model):
-    """API key for external integrations"""
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    key = db.Column(db.String(64), unique=True, nullable=False, index=True)
-    name = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    last_used = db.Column(db.DateTime)
-    is_active = db.Column(db.Boolean, default=True)
-
-    @staticmethod
-    def generate_key():
-        """Generate a new API key"""
-        return secrets.token_urlsafe(48)
-
-    def __repr__(self):
-        return f'<ApiKey {self.name}>'
 
 class Meal(db.Model):
     """Meal/Recipe model"""

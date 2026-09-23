@@ -52,3 +52,11 @@ htmlcov/
 node_modules/
 package-lock.json
 coverage/
+
+# Agent tooling (local only, never commit)
+.pi/
+.claude/
+.github/agents/
+.github/hooks/
+.github/skills/
+.impeccable/

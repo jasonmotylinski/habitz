@@ -62,7 +62,7 @@ jobs:
       - name: Run frontend tests (Jest)
         if: steps.package_check.outputs.exists == 'true'
         run: |
-          npm test -- --coverage --passWithNoTests
+          npm test -- --coverage
       
       - name: Upload coverage reports
         uses: codecov/codecov-action@v3
