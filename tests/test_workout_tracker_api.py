@@ -1200,6 +1200,7 @@ class TestAppleHealthExport:
         assert strength['name'] == 'Push Day'
         assert strength['hk_type'] == 'traditional_strength_training'
         assert strength['duration_minutes'] == 45
+        # No body_weight set → calories is None (estimate_calories returns None)
         assert strength['calories'] is None
         # user timezone is America/New_York — timestamps carry a UTC offset
         assert strength['start'][-6] in '+-'
@@ -1207,6 +1208,35 @@ class TestAppleHealthExport:
         names = [w['name'] for w in workouts]
         assert '45 min Hip Hop Ride' not in names
         assert 'In Progress' not in names
+
+    def test_export_calories_estimated_when_body_weight_set(self, app, user, exercise):
+        """Calories are estimated via MET when body_weight is set on the log."""
+        with app.app_context():
+            log = self._add_completed_log(user.id, 'Leg Day', start_offset_minutes=60)
+            log.body_weight = 185.0  # lbs
+            db.session.add(SetLog(
+                workout_log_id=log.id,
+                exercise_id=exercise.id,
+                set_number=1, actual_reps=10, weight=135.0, completed=True,
+            ))
+            self._set_token(app, user.id, 'test-token-123')
+            db.session.commit()
+
+        data, status = self._call_export(app, headers={'Authorization': 'Bearer test-token-123'})
+        assert status == 200
+        w = data['workouts'][0]
+        # strength MET=5.0, 185lbs=83.9kg, 60min → 5.0*83.9*1.0 = 420
+        assert w['calories'] == 420
+
+    def test_export_calories_none_without_body_weight(self, app, user, exercise):
+        """No body_weight → calories is None."""
+        with app.app_context():
+            self._add_completed_log(user.id, 'Push', start_offset_minutes=45)
+            self._set_token(app, user.id, 'test-token-123')
+            db.session.commit()
+
+        data, status = self._call_export(app, headers={'Authorization': 'Bearer test-token-123'})
+        assert data['workouts'][0]['calories'] is None
 
     def test_export_auth_token(self, app, user):
         with app.app_context():

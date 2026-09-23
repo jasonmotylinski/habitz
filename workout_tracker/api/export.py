@@ -14,6 +14,25 @@ from . import api_bp
 from ..models.user import User
 from ..models.log import WorkoutLog, PelotonWorkout
 
+# MET values (Compendium of Physical Activities, 2024)
+# ponytail: two types only; add per-exercise METs when accuracy demands it.
+_MET = {"strength": 5.0, "cardio": 6.0}
+_LBS_TO_KG = 0.453592
+
+
+def estimate_calories(log):
+    """Estimate calories via MET × weight(kg) × duration(hours).
+
+    Returns int or None when data is insufficient.
+    """
+    duration = log.sync_duration_minutes()
+    if not duration or not log.body_weight:
+        return None
+    is_strength = any(s.exercise.type == "strength" for s in log.sets)
+    met = _MET["strength"] if is_strength else _MET["cardio"]
+    weight_kg = log.body_weight * _LBS_TO_KG
+    return round(met * weight_kg * (duration / 60))
+
 
 def _resolve_user():
     """Session cookie auth, falling back to Bearer token auth."""
@@ -93,7 +112,7 @@ def export_apple_health():
         is_strength = any(s.exercise.type == "strength" for s in log.sets)
         hk_type = "traditional_strength_training" if is_strength else "functional_strength_training"
         name = log.custom_name or (log.workout.name if log.workout_id else "Workout")
-        calories = None
+        calories = estimate_calories(log)
 
         workouts.append({
             "name": name,
