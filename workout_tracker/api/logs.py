@@ -118,11 +118,19 @@ def start_workout():
         custom_name = custom_name.strip()
         if not custom_name:
             return jsonify({"error": "Workout name is required"}), 400
+        started = None
+        if data.get("started_at"):
+            started = datetime.fromisoformat(data["started_at"].replace("Z", "+00:00"))
+        completed = None
+        if data.get("completed_at"):
+            completed = datetime.fromisoformat(data["completed_at"].replace("Z", "+00:00"))
+
         log = WorkoutLog(
             user_id=current_user.id,
             custom_name=custom_name,
             notes=data.get("notes"),
-            completed_at=datetime.now(timezone.utc),
+            started_at=started or datetime.now(timezone.utc),
+            completed_at=completed,
         )
         db.session.add(log)
         db.session.commit()

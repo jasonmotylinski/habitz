@@ -12,6 +12,10 @@
         <input type="text" id="workout-name" class="form-control" placeholder="e.g. Meditation, Hiking, Hotel Gym" required autofocus>
     </div>
     <div class="form-group">
+        <label for="workout-duration">Duration (minutes)</label>
+        <input type="number" id="workout-duration" class="form-control" min="1" max="999" step="1" placeholder="e.g. 45" required>
+    </div>
+    <div class="form-group">
         <label for="workout-notes">Notes (optional)</label>
         <textarea id="workout-notes" class="form-control" rows="3" placeholder="Any details about this workout..."></textarea>
     </div>
@@ -26,10 +30,19 @@ async function saveQuickLog(e) {
     const name = document.getElementById('workout-name').value.trim();
     if (!name) return;
 
+    const duration = parseInt(document.getElementById('workout-duration').value) || null;
     const notes = document.getElementById('workout-notes').value.trim() || undefined;
 
+    const payload = { custom_name: name, notes };
+    if (duration) {
+        const now = new Date().toISOString();
+        const end = new Date(Date.now() + duration * 60000).toISOString();
+        payload.started_at = now;
+        payload.completed_at = end;
+    }
+
     try {
-        await api.post('/api/logs', { custom_name: name, notes });
+        await api.post('/api/logs', payload);
         showToast('Workout logged!', 'success');
         window.location.href = SCRIPT_ROOT + '/';
     } catch (err) {
