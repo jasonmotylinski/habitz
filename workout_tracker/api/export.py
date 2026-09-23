@@ -47,7 +47,7 @@ def export_apple_health():
 
     # since: ISO date (or datetime); default last 30 days. Filtered in Python
     # so the user's local midnight is honored regardless of SQLite string quirks.
-    since_raw = request.args.get("since")
+    since_raw = (request.args.get("since") or "").strip()
     if since_raw:
         try:
             since_dt = datetime.fromisoformat(since_raw)

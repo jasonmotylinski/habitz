@@ -1257,6 +1257,26 @@ class TestAppleHealthExport:
         _, status = self._call_export(app, query_string={'since': 'not-a-date'}, headers=headers)
         assert status == 400
 
+    def test_export_tolerates_whitespace_in_since(self, app, user):
+        """Hand-edited cursor files (last-sync.txt) pick up stray newlines —
+        the since parser must tolerate them instead of 400ing."""
+        with app.app_context():
+            now = datetime.now(timezone.utc)
+            db.session.add(WorkoutLog(
+                user_id=user.id,
+                custom_name='Push',
+                started_at=now - timedelta(days=1),
+                completed_at=now - timedelta(days=1) + timedelta(minutes=45),
+            ))
+            self._set_token(app, user.id, 'tok-ws')
+            db.session.commit()
+
+        data, status = self._call_export(
+            app, query_string='since=2020-01-01%0A',
+            headers={'Authorization': 'Bearer tok-ws'})
+        assert status == 200
+        assert [w['name'] for w in data['workouts']] == ['Push']
+
     def test_export_clamps_duration_to_minimum_one(self, app, user):
         """Zero/negative durations (manual-log "Hotel" row completed within the
         same minute, plus tiny clock skew) must yield duration_minutes 1, never 0
