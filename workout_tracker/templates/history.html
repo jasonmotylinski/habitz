@@ -227,7 +227,7 @@ async function handleChartClick(event) {
                     return `
                         <div class="period-detail-item">
                             <div class="period-detail-name">${log.workout_name}</div>
-                            <div class="period-detail-meta">${dateStr}</div>
+                            <div class="period-detail-meta">${dateStr}${durationBadge(log)}</div>
                         </div>
                     `;
                 }).join('')}
