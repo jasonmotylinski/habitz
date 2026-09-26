@@ -236,7 +236,9 @@ function startRestTimer() {
 
 function _runRestTimer() {
     const el = document.getElementById('rest-time');
-    el.style.display = '';
+    // Must remove the .hidden class: CSS `.hidden { display: none !important }`
+    // beats any inline display value, so style tweaks can't reveal the element.
+    el.classList.remove('hidden');
     const tick = () => {
         const secs = Math.floor((Date.now() - restTimerStartedAt) / 1000);
         const m = Math.floor(secs / 60);
