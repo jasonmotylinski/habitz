@@ -197,6 +197,7 @@ function renderExercises() {
                            step="2.5" min="0"
                            onchange="updateExerciseWeight(${exId}, this.value)">
                     <span class="weight-unit">lb</span>
+                    <span class="text-muted text-sm">all sets</span>
                 </div>
                 ${plateauExercises.has(exId) ? `<div class="plateau-nudge"><span class="icon-arrow-up"></span></div>` : ''}
                 <div class="sets-row">
@@ -212,9 +213,14 @@ function renderExercises() {
                                 display = set.actual_reps;
                             }
                         }
-                        return `<div class="set-circle ${cls}"
-                                     onclick="toggleSet(${set.id}, ${set.planned_reps})"
-                                     id="set-${set.id}">${display}</div>`;
+                        return `<div class="set-cell">
+                                     <div class="set-circle ${cls}"
+                                          onclick="toggleSet(${set.id}, ${set.planned_reps})"
+                                          id="set-${set.id}">${display}</div>
+                                     <input type="number" class="set-weight-input" value="${set.weight ?? ''}"
+                                            placeholder="lb" step="2.5" min="0"
+                                            onchange="updateSetWeight(${set.id}, this.value)">
+                                 </div>`;
                     }).join('')}
                 </div>
             `;
@@ -326,6 +332,14 @@ async function updateExerciseWeight(exerciseId, weightValue) {
     await Promise.all(setsToUpdate.map(s =>
         api.put(`/api/logs/${logId}/sets/${s.id}`, { weight })
     ));
+    renderExercises();
+}
+
+async function updateSetWeight(setId, weightValue) {
+    const weight = weightValue ? parseFloat(weightValue) : null;
+    const set = logData.sets.find(s => s.id === setId);
+    if (set) set.weight = weight;
+    await api.put(`/api/logs/${logId}/sets/${setId}`, { weight });
 }
 
 async function confirmExit() {

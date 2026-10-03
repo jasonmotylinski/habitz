@@ -1369,3 +1369,131 @@ class TestSyncDurationValue:
             db.session.commit()
             assert log.sync_duration_minutes() is None
             assert log.to_dict()['duration_minutes'] is None
+
+
+class TestSessionWeightedAvg:
+    """Tests for the reps-weighted average weight per session.
+
+    The progress chart plots sum(weight * reps) / sum(reps) across
+    completed sets, so a drop-set session (155x8, 155x8, 145x8) charts
+    at ~151.7 rather than the top weight of 155.
+    """
+
+    def _add_session(self, user_id, exercise_id, name, sets):
+        """Add one workout log with (weight, reps, completed) set tuples."""
+        log = WorkoutLog(user_id=user_id, custom_name=name)
+        db.session.add(log)
+        db.session.flush()
+        for num, (weight, reps, completed) in enumerate(sets, start=1):
+            db.session.add(SetLog(
+                workout_log_id=log.id,
+                exercise_id=exercise_id,
+                set_number=num,
+                weight=weight,
+                actual_reps=reps,
+                completed=completed,
+            ))
+        db.session.commit()
+        return log
+
+    def _fetch_session_sets(self, exercise_id, user_id, log_id):
+        """Replicate the exercise_progress query, scoped to one session."""
+        return (
+            SetLog.query
+            .filter_by(exercise_id=exercise_id, workout_log_id=log_id)
+            .join(WorkoutLog)
+            .filter(WorkoutLog.user_id == user_id)
+            .all()
+        )
+
+    def test_drop_set_session_averages_by_reps(self, app, user, exercise):
+        """155x8, 155x8, 145x8 → (155*8 + 155*8 + 145*8) / 24 ≈ 151.67."""
+        with app.app_context():
+            log = self._add_session(user.id, exercise.id, 'Drop set', [
+                (155.0, 8, True),
+                (155.0, 8, True),
+                (145.0, 8, True),
+            ])
+
+            from workout_tracker.api.logs import session_weighted_avg
+
+            sets = self._fetch_session_sets(exercise.id, user.id, log.id)
+            avg = session_weighted_avg(sets)
+
+            assert avg == pytest.approx(151.67, abs=0.01)
+
+    def test_uneven_reps_weight_the_average(self, app, user, exercise):
+        """225x5, 135x10 → (225*5 + 135*10) / 15 = 165.0 — reps matter."""
+        with app.app_context():
+            log = self._add_session(user.id, exercise.id, 'Uneven', [
+                (225.0, 5, True),
+                (135.0, 10, True),
+            ])
+
+            from workout_tracker.api.logs import session_weighted_avg
+
+            sets = self._fetch_session_sets(exercise.id, user.id, log.id)
+            avg = session_weighted_avg(sets)
+
+            assert avg == pytest.approx(165.0, abs=0.01)
+
+    def test_incomplete_sets_excluded(self, app, user, exercise):
+        """Only completed sets contribute to the average."""
+        with app.app_context():
+            log = self._add_session(user.id, exercise.id, 'Partial', [
+                (225.0, 5, True),
+                (135.0, 10, False),
+            ])
+
+            from workout_tracker.api.logs import session_weighted_avg
+
+            sets = self._fetch_session_sets(exercise.id, user.id, log.id)
+            avg = session_weighted_avg(sets)
+
+            assert avg == pytest.approx(225.0, abs=0.01)
+
+    def test_missing_reps_excluded(self, app, user, exercise):
+        """Sets with weight but no actual_reps cannot be weighted."""
+        with app.app_context():
+            log = self._add_session(user.id, exercise.id, 'No reps', [
+                (225.0, None, True),
+                (135.0, 10, True),
+            ])
+
+            from workout_tracker.api.logs import session_weighted_avg
+
+            sets = self._fetch_session_sets(exercise.id, user.id, log.id)
+            avg = session_weighted_avg(sets)
+
+            assert avg == pytest.approx(135.0, abs=0.01)
+
+    def test_none_when_no_weighted_sets(self, app, user, exercise):
+        """No completed sets with weight and reps → None (chart gap)."""
+        with app.app_context():
+            log = self._add_session(user.id, exercise.id, 'Empty', [
+                (225.0, None, True),
+                (135.0, 10, False),
+            ])
+
+            from workout_tracker.api.logs import session_weighted_avg
+
+            sets = self._fetch_session_sets(exercise.id, user.id, log.id)
+            avg = session_weighted_avg(sets)
+
+            assert avg is None
+
+    def test_equal_weights_average_to_same(self, app, user, exercise):
+        """All sets at the same weight → that weight, regardless of reps."""
+        with app.app_context():
+            log = self._add_session(user.id, exercise.id, 'Even', [
+                (185.0, 5, True),
+                (185.0, 8, True),
+                (185.0, 3, True),
+            ])
+
+            from workout_tracker.api.logs import session_weighted_avg
+
+            sets = self._fetch_session_sets(exercise.id, user.id, log.id)
+            avg = session_weighted_avg(sets)
+
+            assert avg == pytest.approx(185.0, abs=0.01)
