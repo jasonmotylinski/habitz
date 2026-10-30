@@ -17,6 +17,15 @@ MANIFEST_PATHS = [
     "meal_planner/static/manifest.json",
 ]
 
+TEMPLATE_PATHS = [
+    "landing/templates/index.html",
+    "budget_tracker/templates/budget/index.html",
+    "calorie_tracker/templates/base.html",
+    "fasting_tracker/templates/base.html",
+    "workout_tracker/templates/base.html",
+    "meal_planner/templates/base.html",
+]
+
 
 class TestManifestOrientation:
     """An installed PWA must be able to rotate.
@@ -31,4 +40,26 @@ class TestManifestOrientation:
             assert data.get("orientation") == "any", (
                 f"{rel} pins orientation to {data.get('orientation')!r}; "
                 "the installed PWA must be able to rotate"
+            )
+
+
+class TestViewportMeta:
+    """The viewport meta must be fluid and zoomable on every app.
+
+    'user-scalable=no' blocks pinch-zoom; a fixed pixel width breaks on any
+    viewport the author did not anticipate (the iPhone Duo's inner display is
+    669 or 951 CSS px wide depending on pose).
+    """
+
+    def test_no_template_blocks_zoom(self):
+        for rel in TEMPLATE_PATHS:
+            html = (REPO_ROOT / rel).read_text()
+            assert "user-scalable=no" not in html, f"{rel} disables pinch-zoom"
+
+    def test_every_template_declares_viewport_fit_cover(self):
+        for rel in TEMPLATE_PATHS:
+            html = (REPO_ROOT / rel).read_text()
+            assert "viewport-fit=cover" in html, (
+                f"{rel} is missing viewport-fit=cover; safe-area insets will "
+                "not reach the notch / Duo camera strip"
             )
