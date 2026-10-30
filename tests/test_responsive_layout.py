@@ -132,14 +132,14 @@ class TestRailWiring:
         assert "--rail-item: 44px" in css
 
 
-CONTROL_CLASSES = ("nav-link", "logout-link", "btn-new", "app-switcher-btn")
+CONTROL_CLASSES = ("nav-link", "logout-link", "btn-new", "app-switcher-btn", "nav-brand")
 
 
 def assert_controls_have_aria_labels(html: str, rel: str) -> None:
     """Every nav/control element must carry a non-empty accessible name.
 
-    In rail mode the visible text is display:none, so aria-label is the only
-    name the control has.
+    In rail mode the visible text is display:none (`.nav-label`, `.nav-title`),
+    so aria-label is the only name the control has.
     """
     import re
 
