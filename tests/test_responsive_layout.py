@@ -110,3 +110,18 @@ class TestLandingRail:
     def test_landing_header_controls_have_accessible_names(self):
         rel = "landing/templates/index.html"
         assert_controls_have_aria_labels((REPO_ROOT / rel).read_text(), rel)
+
+
+class TestLandingSecondaryRail:
+    def test_history_header_controls_have_accessible_names(self):
+        rel = "landing/templates/history.html"
+        assert_controls_have_aria_labels((REPO_ROOT / rel).read_text(), rel)
+
+    def test_habit_form_header_controls_have_accessible_names(self):
+        rel = "landing/templates/habit_form.html"
+        assert_controls_have_aria_labels((REPO_ROOT / rel).read_text(), rel)
+
+    def test_secondary_landing_templates_link_the_rail_stylesheet(self):
+        for rel in ("landing/templates/history.html", "landing/templates/habit_form.html"):
+            html = (REPO_ROOT / rel).read_text()
+            assert "/static/shared/rail.css" in html, f"{rel} does not link the shared rail stylesheet"
