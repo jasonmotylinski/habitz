@@ -67,6 +67,12 @@ class TestViewportMeta:
 
 RAIL_STYLESHEET = "landing/static/shared/rail.css"
 
+# Every template that carries a header and therefore must load the rail.
+RAIL_LINKED_TEMPLATE_PATHS = TEMPLATE_PATHS + [
+    "landing/templates/history.html",
+    "landing/templates/habit_form.html",
+]
+
 
 class TestRailWiring:
     """The rail stylesheet must exist and reach every app.
@@ -81,6 +87,34 @@ class TestRailWiring:
         for rel in TEMPLATE_PATHS:
             html = (REPO_ROOT / rel).read_text()
             assert "shared/rail.css" in html, f"{rel} does not link rail.css"
+
+    def test_rail_stylesheet_is_loaded_after_the_module_stylesheets(self):
+        """Load order is the contract: the rail must win on equal specificity.
+
+        rail.css and the module stylesheets often target the same selectors
+        (e.g. `.app-header`); without rail.css coming last, the module rules
+        would win and the rail would never take shape.
+        """
+        import re
+
+        link_re = re.compile(r'<link[^>]*rel="stylesheet"[^>]*>')
+        for rel in RAIL_LINKED_TEMPLATE_PATHS:
+            html = (REPO_ROOT / rel).read_text()
+            head = html.split("</head>", 1)[0]
+            links = list(link_re.finditer(head))
+            rail_positions = [i for i, m in enumerate(links) if "shared/rail.css" in m.group(0)]
+            assert rail_positions, f"{rel} does not link rail.css"
+            rail_at = rail_positions[0]
+            others = [
+                (i, m.group(0))
+                for i, m in enumerate(links)
+                if "shared/rail.css" not in m.group(0)
+            ]
+            for i, link in others:
+                assert i < rail_at, (
+                    f"{rel}: {link.strip()} is loaded after rail.css — the rail "
+                    "rules would lose on equal specificity"
+                )
 
     def test_rail_stylesheet_defines_the_breakpoint_contract(self):
         css = (REPO_ROOT / RAIL_STYLESHEET).read_text()
