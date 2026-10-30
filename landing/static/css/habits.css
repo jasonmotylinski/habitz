@@ -1042,7 +1042,7 @@ body {
         height: var(--rail-item);
         padding: 0;
         justify-content: center;
-        border-radius: 12px;
+        border-radius: var(--radius);
     }
 
     .btn-new-icon,
@@ -1061,7 +1061,7 @@ body {
         justify-content: center;
         width: var(--rail-item);
         height: var(--rail-item);
-        border-radius: 12px;
+        border-radius: var(--radius);
         margin-top: auto;
     }
 

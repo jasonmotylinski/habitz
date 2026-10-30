@@ -67,6 +67,16 @@ class TestViewportMeta:
 
 RAIL_STYLESHEET = "landing/static/shared/rail.css"
 
+
+def stylesheet_links(html: str) -> list[str]:
+    """The stylesheet <link> tags of the document head, in load order."""
+    import re
+
+    link_re = re.compile(r"<link[^>]*rel=[\"']stylesheet[\"'][^>]*>")
+    head = html.split("</head>", 1)[0]
+    return [m.group(0) for m in link_re.finditer(head)]
+
+
 # Every template that carries a header and therefore must load the rail.
 RAIL_LINKED_TEMPLATE_PATHS = TEMPLATE_PATHS + [
     "landing/templates/history.html",
@@ -86,7 +96,10 @@ class TestRailWiring:
     def test_every_template_links_the_rail_stylesheet(self):
         for rel in TEMPLATE_PATHS:
             html = (REPO_ROOT / rel).read_text()
-            assert "shared/rail.css" in html, f"{rel} does not link rail.css"
+            links = stylesheet_links(html)
+            assert any("shared/rail.css" in tag for tag in links), (
+                f"{rel} does not link rail.css as a stylesheet"
+            )
 
     def test_rail_stylesheet_is_loaded_after_the_module_stylesheets(self):
         """Load order is the contract: the rail must win on equal specificity.
@@ -95,20 +108,16 @@ class TestRailWiring:
         (e.g. `.app-header`); without rail.css coming last, the module rules
         would win and the rail would never take shape.
         """
-        import re
-
-        link_re = re.compile(r'<link[^>]*rel="stylesheet"[^>]*>')
         for rel in RAIL_LINKED_TEMPLATE_PATHS:
             html = (REPO_ROOT / rel).read_text()
-            head = html.split("</head>", 1)[0]
-            links = list(link_re.finditer(head))
-            rail_positions = [i for i, m in enumerate(links) if "shared/rail.css" in m.group(0)]
+            links = stylesheet_links(html)
+            rail_positions = [i for i, tag in enumerate(links) if "shared/rail.css" in tag]
             assert rail_positions, f"{rel} does not link rail.css"
             rail_at = rail_positions[0]
             others = [
-                (i, m.group(0))
-                for i, m in enumerate(links)
-                if "shared/rail.css" not in m.group(0)
+                (i, tag)
+                for i, tag in enumerate(links)
+                if "shared/rail.css" not in tag
             ]
             for i, link in others:
                 assert i < rail_at, (
@@ -123,21 +132,42 @@ class TestRailWiring:
         assert "--rail-item: 44px" in css
 
 
+CONTROL_CLASSES = ("nav-link", "logout-link", "btn-new", "app-switcher-btn")
+
+
 def assert_controls_have_aria_labels(html: str, rel: str) -> None:
-    """Every nav/control element must carry an accessible name.
+    """Every nav/control element must carry a non-empty accessible name.
 
     In rail mode the visible text is display:none, so aria-label is the only
     name the control has.
     """
     import re
-    pattern = re.compile(
-        r"<(a|button)\b[^>]*class=\"[^\"]*"
-        r"(nav-link|logout-link|btn-new|app-switcher-btn)"
-        r"[^\"]*\"[^>]*>"
-    )
-    for match in pattern.finditer(html):
+
+    tag_re = re.compile(r"<(a|button)\b[^>]*>")
+    class_re = re.compile(r"class=(?:\"([^\"]*)\"|'([^']*)')")
+    label_re = re.compile(r"aria-label=(?:\"([^\"]*)\"|'([^']*)')")
+
+    controls = []
+    for match in tag_re.finditer(html):
         tag = match.group(0)
-        assert "aria-label=" in tag, f"{rel}: control without accessible name -> {tag[:140]}"
+        class_match = class_re.search(tag)
+        if not class_match:
+            continue
+        classes = (class_match.group(1) or class_match.group(2) or "").split()
+        if any(name in classes for name in CONTROL_CLASSES):
+            controls.append(tag)
+
+    assert controls, (
+        f"{rel}: no control matched {CONTROL_CLASSES} — the selector is stale, "
+        "so this check would pass without testing anything"
+    )
+
+    for tag in controls:
+        label_match = label_re.search(tag)
+        label = (label_match.group(1) or label_match.group(2) or "") if label_match else ""
+        assert label.strip(), (
+            f"{rel}: control without a non-empty accessible name -> {tag[:140]}"
+        )
 
 
 class TestLandingRail:
@@ -158,7 +188,10 @@ class TestLandingSecondaryRail:
     def test_secondary_landing_templates_link_the_rail_stylesheet(self):
         for rel in ("landing/templates/history.html", "landing/templates/habit_form.html"):
             html = (REPO_ROOT / rel).read_text()
-            assert "/static/shared/rail.css" in html, f"{rel} does not link the shared rail stylesheet"
+            links = stylesheet_links(html)
+            assert any("shared/rail.css" in tag for tag in links), (
+                f"{rel} does not link the shared rail stylesheet"
+            )
 
 
 class TestBudgetRail:
