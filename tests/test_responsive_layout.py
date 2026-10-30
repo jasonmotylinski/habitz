@@ -159,3 +159,9 @@ class TestLandingSecondaryRail:
         for rel in ("landing/templates/history.html", "landing/templates/habit_form.html"):
             html = (REPO_ROOT / rel).read_text()
             assert "/static/shared/rail.css" in html, f"{rel} does not link the shared rail stylesheet"
+
+
+class TestBudgetRail:
+    def test_budget_header_controls_have_accessible_names(self):
+        rel = "budget_tracker/templates/budget/index.html"
+        assert_controls_have_aria_labels((REPO_ROOT / rel).read_text(), rel)
