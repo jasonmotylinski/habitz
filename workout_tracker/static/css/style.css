@@ -18,6 +18,8 @@
     --radius: 12px;
     --radius-sm: 8px;
     --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --rail-bg: #0f1117;
+    --rail-border: var(--border);
 }
 
 * {
@@ -1519,4 +1521,25 @@ select.form-control {
   .nav-label {
     display: inline;
   }
+}
+
+/* ── Navigation rail (>=640px) ─────────────────────── */
+
+@media (min-width: 640px) {
+    .navbar {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
+    .nav-logo {
+        width: var(--rail-item);
+        height: var(--rail-item);
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* The timer bar is fixed to the viewport, so it would run under the rail. */
+    .timer-bar {
+        left: calc(var(--rail-w) + var(--rail-inset-left));
+    }
 }
