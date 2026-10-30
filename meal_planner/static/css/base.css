@@ -39,6 +39,10 @@
     --z-dropdown: 100;
     --z-modal: 200;
     --z-tooltip: 300;
+
+    /* Rail */
+    --rail-bg: #0f1117;
+    --rail-border: rgba(255, 255, 255, 0.06);
 }
 
 /* ===== RESET & BASE ===== */

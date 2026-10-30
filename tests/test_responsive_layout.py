@@ -211,3 +211,9 @@ class TestWorkoutRail:
     def test_workout_nav_links_have_accessible_names(self):
         rel = "workout_tracker/templates/base.html"
         assert_controls_have_aria_labels((REPO_ROOT / rel).read_text(), rel)
+
+
+class TestMealRail:
+    def test_meal_nav_links_have_accessible_names(self):
+        rel = "meal_planner/templates/base.html"
+        assert_controls_have_aria_labels((REPO_ROOT / rel).read_text(), rel)
