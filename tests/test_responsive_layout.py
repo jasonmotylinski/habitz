@@ -63,3 +63,27 @@ class TestViewportMeta:
                 f"{rel} is missing viewport-fit=cover; safe-area insets will "
                 "not reach the notch / Duo camera strip"
             )
+
+
+RAIL_STYLESHEET = "landing/static/shared/rail.css"
+
+
+class TestRailWiring:
+    """The rail stylesheet must exist and reach every app.
+
+    640px is the breakpoint that keeps the iPhone Duo's inner display
+    (669 CSS px wide in portrait) in rail mode while the folded outer display
+    (382px) and split view (385px) stay in top-bar mode. Chrome on iOS
+    renders the Duo at 871px, so the rail must appear below that too.
+    """
+
+    def test_every_template_links_the_rail_stylesheet(self):
+        for rel in TEMPLATE_PATHS:
+            html = (REPO_ROOT / rel).read_text()
+            assert "shared/rail.css" in html, f"{rel} does not link rail.css"
+
+    def test_rail_stylesheet_defines_the_breakpoint_contract(self):
+        css = (REPO_ROOT / RAIL_STYLESHEET).read_text()
+        assert "@media (min-width: 640px)" in css
+        assert "--rail-w: 64px" in css
+        assert "--rail-item: 44px" in css
