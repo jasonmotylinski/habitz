@@ -23,6 +23,8 @@
     --safe-bottom:env(safe-area-inset-bottom, 0px);
     --safe-left:  env(safe-area-inset-left, 0px);
     --safe-right: env(safe-area-inset-right, 0px);
+    --rail-bg: #0f1117;
+    --rail-border: var(--border);
 }
 
 html { font-size: 16px; -webkit-text-size-adjust: 100%; }
@@ -50,6 +52,12 @@ body {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
+}
+
+.nav-head {
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .brand {
@@ -81,6 +89,11 @@ body {
     transition: opacity 0.15s;
 }
 .btn-new:hover { opacity: 0.85; }
+
+.btn-new-icon,
+.logout-icon {
+    display: none;
+}
 
 .user-bar {
     display: flex;
@@ -1009,4 +1022,50 @@ body {
     font-weight: 700;
     color: var(--text);
     margin: 0;
+}
+
+/* ── Navigation rail (>=640px) ─────────────────────── */
+
+@media (min-width: 640px) {
+    .app-header {
+        /* rail geometry lives in /static/shared/rail.css */
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
+    .brand {
+        font-size: 0.8125rem;
+    }
+
+    .btn-new {
+        width: var(--rail-item);
+        height: var(--rail-item);
+        padding: 0;
+        justify-content: center;
+        border-radius: 12px;
+    }
+
+    .btn-new-icon,
+    .logout-icon {
+        display: block;
+    }
+
+    .btn-new-label,
+    .logout-label {
+        display: none;
+    }
+
+    .logout-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: var(--rail-item);
+        height: var(--rail-item);
+        border-radius: 12px;
+        margin-top: auto;
+    }
+
+    .username {
+        display: none;
+    }
 }

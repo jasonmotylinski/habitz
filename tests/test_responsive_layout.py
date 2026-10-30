@@ -87,3 +87,26 @@ class TestRailWiring:
         assert "@media (min-width: 640px)" in css
         assert "--rail-w: 64px" in css
         assert "--rail-item: 44px" in css
+
+
+def assert_controls_have_aria_labels(html: str, rel: str) -> None:
+    """Every nav/control element must carry an accessible name.
+
+    In rail mode the visible text is display:none, so aria-label is the only
+    name the control has.
+    """
+    import re
+    pattern = re.compile(
+        r"<(a|button)\b[^>]*class=\"[^\"]*"
+        r"(nav-link|logout-link|btn-new|app-switcher-btn)"
+        r"[^\"]*\"[^>]*>"
+    )
+    for match in pattern.finditer(html):
+        tag = match.group(0)
+        assert "aria-label=" in tag, f"{rel}: control without accessible name -> {tag[:140]}"
+
+
+class TestLandingRail:
+    def test_landing_header_controls_have_accessible_names(self):
+        rel = "landing/templates/index.html"
+        assert_controls_have_aria_labels((REPO_ROOT / rel).read_text(), rel)
