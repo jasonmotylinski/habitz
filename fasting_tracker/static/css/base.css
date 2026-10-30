@@ -71,6 +71,10 @@
     /* Transitions */
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* Rail */
+    --rail-bg: #0f1117;
+    --rail-border: rgba(255, 255, 255, 0.06);
 }
 
 /* ---- Reset ---- */
@@ -132,6 +136,12 @@ input, select, textarea {
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     border-bottom: 1px solid var(--border);
     padding-top: env(safe-area-inset-top);
+}
+
+.nav-head {
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .nav-inner {
@@ -444,4 +454,20 @@ input, select, textarea {
   .nav-label {
     display: inline;
   }
+}
+
+/* ── Navigation rail (>=640px) ─────────────────────── */
+
+@media (min-width: 640px) {
+    .navbar {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
+    .nav-logo {
+        width: var(--rail-item);
+        height: var(--rail-item);
+        align-items: center;
+        justify-content: center;
+    }
 }

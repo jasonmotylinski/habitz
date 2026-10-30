@@ -198,3 +198,10 @@ class TestBudgetRail:
     def test_budget_header_controls_have_accessible_names(self):
         rel = "budget_tracker/templates/budget/index.html"
         assert_controls_have_aria_labels((REPO_ROOT / rel).read_text(), rel)
+
+
+class TestNavbarFamilyRails:
+    def test_calorie_and_fasting_nav_links_have_accessible_names(self):
+        for rel in ("calorie_tracker/templates/base.html",
+                    "fasting_tracker/templates/base.html"):
+            assert_controls_have_aria_labels((REPO_ROOT / rel).read_text(), rel)
