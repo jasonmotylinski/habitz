@@ -98,18 +98,18 @@ async function loadProgress() {
         const chartSection = document.getElementById('chart-section');
         if (data.history && data.history.length > 1) {
             const chronological = [...data.history].reverse();
-            let labels, values, yLabel;
+            let labels, values, yLabel, unit;
 
             if (data.exercise.type === 'strength') {
                 labels = chronological.map(s => {
                     const d = new Date(s.date);
                     return `${d.getMonth()+1}/${d.getDate()}`;
                 });
-                values = chronological.map(s => {
-                    const weights = s.sets.filter(x => x.completed && x.weight).map(x => x.weight);
-                    return weights.length ? Math.max(...weights) : null;
-                });
-                yLabel = 'Max Weight (lb)';
+                // avg_weight is the server-computed reps-weighted average
+                // (sum(weight*reps)/sum(reps)) — drop sets pull the point down.
+                values = chronological.map(s => s.avg_weight ?? null);
+                yLabel = 'Avg Weight (lb)';
+                unit = 'lb';
             } else {
                 labels = chronological.map(s => {
                     const d = new Date(s.date);
@@ -120,6 +120,7 @@ async function loadProgress() {
                     return durations.length ? Math.max(...durations) : null;
                 });
                 yLabel = 'Duration (min)';
+                unit = 'min';
             }
 
             const hasData = values.some(v => v !== null);
@@ -147,7 +148,7 @@ async function loadProgress() {
                         responsive: true,
                         plugins: {
                             legend: { display: false },
-                            tooltip: { callbacks: { label: ctx => `${ctx.parsed.y} ${yLabel.split(' ')[0] === 'Max' ? 'lb' : 'min'}` } }
+                            tooltip: { callbacks: { label: ctx => `${ctx.parsed.y} ${unit}` } }
                         },
                         scales: {
                             x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },

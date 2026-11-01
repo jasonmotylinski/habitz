@@ -38,6 +38,24 @@ def get_last_weights_for_workout(workout_id, user_id):
     return weights_by_exercise
 
 
+def session_weighted_avg(session_set_logs):
+    """Reps-weighted average weight across completed sets.
+
+    sum(weight * reps) / sum(reps) over completed sets that have both
+    weight and actual_reps. A drop-set session (155x8, 155x8, 145x8)
+    charts at ~151.7 rather than the top weight of 155. None when no
+    set qualifies (chart draws a gap).
+    """
+    done = [
+        s for s in session_set_logs
+        if s.completed and s.weight and s.actual_reps
+    ]
+    total_reps = sum(s.actual_reps for s in done)
+    if not total_reps:
+        return None
+    return sum(s.weight * s.actual_reps for s in done) / total_reps
+
+
 def session_strength_flags(session_set_logs):
     """
     Given one session's SetLog rows, return (top_weight, hit_reps_target).
@@ -413,6 +431,9 @@ def exercise_progress(exercise_id):
             top_weight, hit_reps_target = session_strength_flags(session_set_logs[log_id])
             session["top_weight"] = top_weight
             session["hit_reps_target"] = hit_reps_target
+            # Chart point: reps-weighted average, so drop sets pull the
+            # line down instead of the top weight masking them.
+            session["avg_weight"] = session_weighted_avg(session_set_logs[log_id])
 
     # Calculate stats for strength exercises
     stats = {"exercise": exercise.to_dict(), "history": list(sessions.values())}

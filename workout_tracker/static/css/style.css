@@ -494,6 +494,48 @@ select.form-control {
     color: #000;
 }
 
+/* Per-set weight input under each circle */
+.set-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.set-weight-input {
+    width: 56px;
+    padding: 2px 4px;
+    font-size: 0.8rem;
+    text-align: center;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    -moz-appearance: textfield;
+}
+
+.set-weight-input::-webkit-outer-spin-button,
+.set-weight-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+
+.set-weight-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* History edit modal — per-set weight/reps rows */
+.set-edit-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.set-edit-row .form-control {
+    width: 72px;
+}
+
 /* Active workout */
 .exercise-block {
     margin-bottom: 20px;

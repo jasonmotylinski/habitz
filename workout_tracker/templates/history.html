@@ -414,14 +414,16 @@ function renderHistoryList() {
             const sortedSets = [...ex.sets].sort((a, b) => a.set_number - b.set_number);
             const completedSets = sortedSets.filter(s => s.completed);
             const anySetId = (completedSets[0] || sortedSets[0]).id;
-            const weight = (sortedSets.find(s => s.weight != null) || {}).weight || null;
-            // One reps value per set: actual if completed, planned if not — mirrors the circles
+            // One weight and one reps value per set — mirrors the circles
+            const allWeights = sortedSets.map(s => s.weight != null ? s.weight : '').join(',');
             const allReps = sortedSets.map(s => s.completed ? s.actual_reps : s.planned_reps).join(',');
             const isSkipped = completedSets.length === 0;
             const displayReps = isSkipped ? 'Skipped' : completedSets.map(s => s.actual_reps).join('/');
-            return `<div class="history-exercise" onclick="event.stopPropagation(); openEditModal(${log.id}, ${anySetId}, '${escapedName}', 'strength', null, ${weight}, '${allReps}')">
+            // Distinct weights of completed sets: "155lb" or "155/145lb"
+            const weightText = [...new Set(completedSets.map(s => s.weight).filter(w => w != null))].join('/');
+            return `<div class="history-exercise" onclick="event.stopPropagation(); openEditModal(${log.id}, ${anySetId}, '${escapedName}', 'strength', null, '${allWeights}', '${allReps}')">
                 <span class="name">${ex.name}</span>
-                <span class="${isSkipped ? 'skipped' : 'result'}">${displayReps}${!isSkipped && weight ? ' ' + weight + 'lb' : ''}</span>
+                <span class="${isSkipped ? 'skipped' : 'result'}">${displayReps}${weightText ? ' ' + weightText + 'lb' : ''}</span>
                 <span class="history-exercise-actions">
                     <button class="history-exercise-progress" onclick="event.stopPropagation(); window.location.href=SCRIPT_ROOT+'/exercises/${exerciseId}/progress'" title="View progress"><span class="icon-arrow-out"></span></button>
                     <button class="history-exercise-delete" onclick="event.stopPropagation(); deleteExercise(${log.id}, ${anySetId})" title="Delete exercise">×</button>
@@ -504,8 +506,8 @@ async function deleteExercise(logId, setId) {
     }
 }
 
-function openEditModal(logId, setId, exerciseName, type, duration, weight, reps) {
-    editingSet = { logId, setId, exerciseName, type, duration, weight, reps };
+function openEditModal(logId, setId, exerciseName, type, duration, weights, reps) {
+    editingSet = { logId, setId, exerciseName, type, duration, weights, reps };
     const modal = document.getElementById('edit-modal');
     const body = document.getElementById('edit-modal-body');
 
@@ -525,20 +527,21 @@ function openEditModal(logId, setId, exerciseName, type, duration, weight, reps)
         `;
     } else {
         const repsArray = reps ? reps.split(',') : [];
+        const weightsArray = weights ? String(weights).split(',') : [];
         body.innerHTML = `
             <div class="form-group">
                 <label>${exerciseName}</label>
-                <div class="form-row-flex">
-                    <input type="number" id="edit-weight" class="form-control" value="${weight || 0}" step="0.5" placeholder="Weight">
-                    <span class="text-muted">lb</span>
+                <div class="set-edit-rows">
+                    ${repsArray.map((r, i) => `
+                        <div class="set-edit-row">
+                            <span class="text-muted text-sm">Set ${i + 1}</span>
+                            <input type="number" class="form-control edit-set-weight" value="${weightsArray[i] || 0}" step="0.5" placeholder="Weight">
+                            <span class="text-muted">lb ×</span>
+                            <input type="number" class="form-control edit-set-reps" value="${r}" step="1">
+                            <span class="text-muted">reps</span>
+                        </div>
+                    `).join('')}
                 </div>
-            </div>
-            <div class="form-group">
-                <label>Reps: <span class="rep-inputs-inline">${repsArray.map((r, i) => `
-                    <span class="rep-input-inline">
-                        <input type="number" class="form-control" value="${r}" onchange="updateRepAtIndex(${i}, this.value)">
-                    </span>
-                `).join('')}</span></label>
             </div>
             <div class="form-row-flex mt-4">
                 <button class="btn btn-primary" onclick="saveEdit()">Save</button>
@@ -555,13 +558,6 @@ function closeEditModal() {
     editingSet = null;
 }
 
-function updateRepAtIndex(index, value) {
-    if (!editingSet) return;
-    const repsArray = editingSet.reps.split(',');
-    repsArray[index] = parseInt(value);
-    editingSet.reps = repsArray.join(',');
-}
-
 async function saveEdit() {
     if (!editingSet) return;
 
@@ -572,10 +568,8 @@ async function saveEdit() {
             if (duration > 0) payload.completed = true;
             await api.put(`/api/logs/${editingSet.logId}/sets/${editingSet.setId}`, payload);
         } else {
-            const weight = parseFloat(document.getElementById('edit-weight').value) || null;
-            // Slice off the weight input (first); remaining inputs are one per set's reps
-            const allInputs = Array.from(document.querySelectorAll('#edit-modal-body input[type="number"]'));
-            const repInputs = allInputs.slice(1);
+            const weightInputs = Array.from(document.querySelectorAll('#edit-modal-body .edit-set-weight'));
+            const repInputs = Array.from(document.querySelectorAll('#edit-modal-body .edit-set-reps'));
 
             // Find all sets for this exercise from allLogs so we update every set, not just the first
             const log = allLogs.find(l => l.id === editingSet.logId);
@@ -587,10 +581,9 @@ async function saveEdit() {
 
             if (exerciseSets && exerciseSets.length) {
                 await Promise.all(exerciseSets.map((s, i) => {
-                    // Use corresponding rep input; fall back to last input for overflow sets
-                    const reps = repInputs[i]
-                        ? parseInt(repInputs[i].value)
-                        : parseInt(repInputs[repInputs.length - 1]?.value) || s.planned_reps;
+                    // Per-set weight and reps from the modal's row inputs
+                    const reps = repInputs[i] ? parseInt(repInputs[i].value) : s.planned_reps;
+                    const weight = weightInputs[i] ? (parseFloat(weightInputs[i].value) || null) : null;
                     return api.put(`/api/logs/${editingSet.logId}/sets/${s.id}`, {
                         weight,
                         actual_reps: reps,
@@ -600,7 +593,7 @@ async function saveEdit() {
             } else {
                 // Fallback: update just the known set
                 await api.put(`/api/logs/${editingSet.logId}/sets/${editingSet.setId}`, {
-                    weight,
+                    weight: weightInputs[0] ? (parseFloat(weightInputs[0].value) || null) : null,
                     actual_reps: repInputs[0] ? parseInt(repInputs[0].value) : null,
                     completed: true,
                 });
