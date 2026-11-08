@@ -1580,8 +1580,15 @@ select.form-control {
         justify-content: center;
     }
 
-    /* The timer bar is fixed to the viewport, so it would run under the rail. */
+    /* The timer bar is fixed to the viewport, so it would run under the rail
+       — now on the right edge. */
     .timer-bar {
-        left: calc(var(--rail-w) + var(--rail-inset-left));
+        right: calc(var(--rail-w) + var(--rail-inset-right));
+    }
+
+    /* The FAB sits bottom-right and would be covered by the rail (z-index
+       200); keep it clear of the rail and of the landscape inset. */
+    .fab {
+        right: calc(20px + var(--rail-w) + var(--rail-inset-right));
     }
 }

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make Habitz lay out correctly on the iPhone Duo (and every wide viewport) by moving navigation from a horizontal top bar into a vertical left rail, and by unblocking rotation/zoom that currently prevent the app from adapting to new device geometry.
+**Goal:** Make Habitz lay out correctly on the iPhone Duo (and every wide viewport) by moving navigation from a horizontal top bar into a vertical right-side rail, and by unblocking rotation/zoom that currently prevent the app from adapting to new device geometry.
 
 **Architecture:** Habitz is a Flask PWA (server-rendered Jinja2 + custom CSS per module), not a native iOS app — Apple's native bar-relocation does not apply to us, so we build the side rail ourselves in CSS. The existing header markup is *re-laid out* rather than duplicated: the same `<header class="app-header">` / `<nav class="navbar">` element becomes the rail at `min-width: 640px` by switching to `position: fixed` + a vertical flex column, and `display: contents` on the intermediate wrappers lets their children become rail items without duplicating any nav link. A new shared stylesheet `landing/static/shared/rail.css` owns the generic rail geometry; each module keeps ownership of its own colours (tokens declared in that module's `:root`).
 
@@ -62,7 +62,7 @@ Sources consulted, 2026-10-30. Nothing here is inferred from rumour; each item i
 
 Agreed with the user before this plan was written:
 
-1. **Form — icon rail.** A narrow vertical strip on the left edge: app switcher at the top, module nav icons stacked vertically, user/logout pinned to the bottom. The horizontal top bar disappears at wide widths.
+1. **Form — icon rail.** A narrow vertical strip pinned to the **right edge** (user ruling, 2026-11-08 — the first build pinned it left): app switcher at the top, module nav icons stacked vertically, user/logout pinned to the bottom. The horizontal top bar disappears at wide widths.
 2. **Scope — shell only.** Rail + top-bar fallback across all six apps. Content layout is untouched: each module keeps its existing container width (`landing` 600px, `workout` 480px, `meal` 1200px, `calorie`/`fasting` 600px→960px at ≥768px). The extra width on the Duo simply sits empty.
 3. **Breakpoint — `min-width: 640px`.** Chosen from the measured viewport table:
    - 382px (folded outer display) and 385px (split view) → top bar. A rail would cost too much of a 382px-wide screen.
@@ -77,11 +77,11 @@ Agreed with the user before this plan was written:
 - Repo: `/Users/jason/code/personal/habitz/habitz`, branch `main`. `CLAUDE.md` is modified and `DESIGN.md` / `PRODUCT.md` are untracked — **do not commit unrelated files**; stage only the paths each task names.
 - Pushing to `main` triggers the GitHub Actions auto-deploy to `rawkit-01` (production). Work on a branch and merge only after review.
 - No new runtime dependencies, no build step, no CSS framework. Plain CSS + Jinja only.
-- Module Color Sovereignty: `rail.css` may only *consume* colour tokens. Every module declares its own `--rail-*` values in its own `:root`. `rail.css` declares only geometry tokens (`--rail-w`, `--rail-item`, `--rail-inset-left`) and provides `var(--x, fallback)` for everything else.
+- Module Color Sovereignty: `rail.css` may only *consume* colour tokens. Every module declares its own `--rail-*` values in its own `:root`. `rail.css` declares only geometry tokens (`--rail-w`, `--rail-item`, `--rail-inset-right`) and provides `var(--x, fallback)` for everything else.
 - `rail.css` must be linked **after** each module's own stylesheet in every template, so rail rules win on equal specificity.
 - Touch targets in rail mode: **44×44px minimum** (Apple HIG minimum; the modules currently use 40×40).
 - Never size layout from `screen.width`, never hard-code a device width, never branch on user-agent or device name.
-- `env(safe-area-inset-*)` is the only way to read insets; the rail pads with `env(safe-area-inset-top)` / `env(safe-area-inset-bottom)` / `env(safe-area-inset-left)` and paints an opaque background behind the inset. The right inset belongs to the content area, not to the rail.
+- `env(safe-area-inset-*)` is the only way to read insets; the rail pads with `env(safe-area-inset-top)` / `env(safe-area-inset-bottom)` / `env(safe-area-inset-right)` and paints an opaque background behind the inset. The rail hugs the right edge, so the **left** inset belongs to the content area, not to the rail.
 - Every icon-only control must have an accessible name (`aria-label`) — in rail mode the visible text is `display: none`, so `aria-label` becomes the only name.
 - Modal overlays (`position: fixed; inset: 0`, z-index 1322/1343) intentionally cover the rail; do not lower their z-index.
 - Test command: `venv/bin/python -m pytest tests/ -q` (from the repo root). The repo's venv is `habitz/habitz/venv`.
@@ -361,26 +361,27 @@ Write exactly this file:
 :root {
     --rail-w: 64px;
     --rail-item: 44px;
-    /* Landscape notch inset: the rail hugs the physical left edge, so it has
+    /* Landscape notch inset: the rail hugs the physical right edge, so it has
        to grow by the inset instead of drawing under it. */
-    --rail-inset-left: env(safe-area-inset-left, 0px);
+    --rail-inset-right: env(safe-area-inset-right, 0px);
 }
 
 @media (min-width: 640px) {
-    /* The rail is fixed to the viewport's left edge, so page content is
+    /* The rail is fixed to the viewport's right edge, so page content is
        offset by the same amount. Fixed-position chrome (timers, FABs,
        toasts) is positioned against the viewport and is unaffected. */
     body {
-        padding-left: calc(var(--rail-w) + var(--rail-inset-left));
+        padding-right: calc(var(--rail-w) + var(--rail-inset-right));
     }
 
     .app-header,
     .navbar {
         position: fixed;
         top: 0;
-        left: 0;
+        right: 0;
         bottom: 0;
-        width: calc(var(--rail-w) + var(--rail-inset-left));
+        left: auto;
+        width: calc(var(--rail-w) + var(--rail-inset-right));
         z-index: 200;
         display: flex;
         flex-direction: column;
@@ -391,11 +392,12 @@ Write exactly this file:
         max-width: none;
         height: auto;
         padding: calc(env(safe-area-inset-top, 0px) + 12px)
-                 0
+                 var(--rail-inset-right)
                  calc(env(safe-area-inset-bottom, 0px) + 12px)
-                 var(--rail-inset-left);
+                 0;
         background: var(--rail-bg, #0f1117);
-        border-right: 1px solid var(--rail-border, rgba(255, 255, 255, 0.08));
+        border-left: 1px solid var(--rail-border, rgba(255, 255, 255, 0.08));
+        border-right: none;
         border-bottom: none;
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
@@ -454,16 +456,17 @@ Write exactly this file:
         display: none;
     }
 
-    /* Popovers open toward the content, not down the rail. */
+    /* Popovers open toward the content (left), not down the rail. */
     .app-switcher-menu {
         top: 0;
-        left: calc(100% + 8px);
+        left: auto;
+        right: calc(100% + 8px);
     }
 
     .nav-dropdown-menu {
         top: 0;
-        left: calc(100% + 8px);
-        right: auto;
+        left: auto;
+        right: calc(100% + 8px);
     }
 }
 ```
@@ -1073,9 +1076,16 @@ In `workout_tracker/static/css/style.css`:
         justify-content: center;
     }
 
-    /* The timer bar is fixed to the viewport, so it would run under the rail. */
+    /* The timer bar is fixed to the viewport, so it would run under the rail
+       — now on the right edge. */
     .timer-bar {
-        left: calc(var(--rail-w) + var(--rail-inset-left));
+        right: calc(var(--rail-w) + var(--rail-inset-right));
+    }
+
+    /* The FAB sits bottom-right and would be covered by the rail (z-index
+       200); keep it clear of the rail and of the landscape inset. */
+    .fab {
+        right: calc(20px + var(--rail-w) + var(--rail-inset-right));
     }
 }
 ```
@@ -1101,7 +1111,7 @@ git commit -m "feat: navigation rail for the workout tracker"
 
 ### Task 8: Meal rail (`.navbar` family, icon-only links + user dropdown)
 
-Meal's nav links are already icon-only (they carry a `title` but no text node), so the top bar is already an icon row; the rail is the same row rotated. Two extras: the links need `aria-label` (a `title` alone is a weak accessible name), and the `#userDropdown` menu must open to the right of the rail and sit at the bottom of it.
+Meal's nav links are already icon-only (they carry a `title` but no text node), so the top bar is already an icon row; the rail is the same row rotated. Two extras: the links need `aria-label` (a `title` alone is a weak accessible name), and the `#userDropdown` menu must open to the left of the rail (the rail is pinned to the right edge) and sit at the bottom of it.
 
 **Files:**
 - Modify: `meal_planner/templates/base.html:35`, `:78-95`
@@ -1305,9 +1315,9 @@ The test asserts, for every module:
 
 - [ ] **Step 1: Verify each pose in Safari 27.1 / the iPhone Duo simulator**
 
-> **Controller note (2026-11-01):** the deploy to production happened before this documentation task, so Step 1's manual Safari check is still outstanding for a human. What HAS been measured, in headless Google Chrome against the real app (a throwaway SQLite DB, 6 viewport widths × 8 pages, asserting header position, rail width, `body` padding-left, minimum rail touch-target size, `documentElement.scrollWidth` vs `innerWidth`, and elements past the right edge):
+> **Controller note (2026-11-01):** the deploy to production happened before this documentation task, so Step 1's manual Safari check is still outstanding for a human. What HAS been measured, in headless Google Chrome against the real app (a throwaway SQLite DB, 6 viewport widths × 8 pages, asserting header position, rail width, `body` rail-side padding, minimum rail touch-target size, `documentElement.scrollWidth` vs `innerWidth`, and elements past the right edge). *Measured when the rail was still on the left; the user ruling on 2026-11-08 pinned it to the right — the `padding-left` column below now corresponds to `padding-right`, everything else is side-independent:*
 >
-> | Viewport | Header | Header width | `body` padding-left | Smallest rail target | Horizontal overflow |
+> | Viewport | Header | Header width | `body` rail-side padding | Smallest rail target | Horizontal overflow |
 > |---|---|---|---|---|---|
 > | 382px (folded portrait) | `sticky` top bar | 382px (full) | 0 | n/a (top bar) | none |
 > | 594px (folded landscape) | `sticky` top bar | 594px (full) | 0 | n/a (top bar) | none |
@@ -1326,7 +1336,7 @@ In Xcode 27.1+ use Device Hub → iPhone Duo, and in Safari 27.1 check these vie
 |---|---|---|
 | Folded, portrait | 382px | Top bar; no horizontal scrolling; the "+ New habit" pill and "Log out" fully inside the 382px column; nothing under the right-hand system strip |
 | Folded, landscape | 594px | Top bar; the top bar's right controls not clipped |
-| Unfolded, portrait | 669px | Rail on the left, 64px wide; the 600px content column still fits beside it; the app-switcher menu opens to the right of the rail |
+| Unfolded, portrait | 669px | Rail on the right, 64px wide; the 600px content column still fits beside it; the app-switcher menu opens to the left of the rail |
 | Unfolded, landscape | 951px | Rail; the crease at x ≈ 475 crosses the content column (accepted limitation, see below) |
 | Split view | 385px | Top bar, same as folded portrait |
 
@@ -1336,7 +1346,7 @@ Also confirm: rotating/folding changes the layout **without a reload** (scroll p
 
 Update these sections:
 
-- *Container model*: add that at ≥640px the module chrome becomes a fixed 64px left rail (`landing/static/shared/rail.css`) and the content column stays as specified.
+- *Container model*: add that at ≥640px the module chrome becomes a fixed 64px right rail (`landing/static/shared/rail.css`) and the content column stays as specified.
 - *Responsive behavior*: replace "Primary breakpoint 480px … No tablet-specific layout" with the two-breakpoint model — 480px (username), 640px (rail), 768px (existing wide-container rules).
 - *Shared components*: `landing/static/shared/habitz.css` carries the app switcher; `landing/static/shared/rail.css` carries the rail geometry. Colour tokens (`--rail-bg`, `--rail-border`) stay in each module's `:root`.
 - *Touch targets*: raise the floor from 40px to 44×44px for rail items, per Apple's HIG minimum.

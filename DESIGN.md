@@ -194,7 +194,7 @@ The light family uses warm cream grounds with botanical greens and terracotta ac
 - Meal planner: `max-width: 1200px`, centered.
 - Calorie tracker: `max-width: 600px`, centered.
 
-At `min-width: 640px` the module chrome becomes a fixed 64px left rail (`landing/static/shared/rail.css`); the content column stays as specified above.
+At `min-width: 640px` the module chrome becomes a fixed 64px right rail (`landing/static/shared/rail.css`); the content column stays as specified above.
 
 **Spacing Rhythm:**
 - Base unit: 4px
@@ -205,7 +205,7 @@ At `min-width: 640px` the module chrome becomes a fixed 64px left rail (`landing
 **Header Pattern:** Sticky, `backdrop-filter: blur(12px)` with translucent background (`rgba(15,17,23,0.85)` on dark, `rgba(250,248,245,0.92)` on light). Contains app switcher (left), brand name, and module-specific actions (right).
 
 **Responsive Behavior:**
-- Two primary breakpoints: 480px (show/hide username in header) and 640px (the top bar becomes the left rail). 768px carries the existing wide-container rules.
+- Two primary breakpoints: 480px (show/hide username in header) and 640px (the top bar becomes the right rail). 768px carries the existing wide-container rules.
 - Landscape phones: reduced padding (`12px`), smaller headers.
 - Below 640px the horizontal top bar is unchanged — all modules scale the single-column container.
 
@@ -306,7 +306,7 @@ The app switcher is the shared navigation component (rail aside — see *Navigat
 
 ### Navigation Rail (≥640px)
 
-At `min-width: 640px` the header re-lays out as a fixed 64px left rail; below that width the horizontal top bar is unchanged. Geometry is shared in `landing/static/shared/rail.css` (`--rail-w: 64px`, `--rail-item: 44px`, `--rail-inset-left: env(safe-area-inset-left, 0px)`); colour is sovereign per module — each module declares `--rail-bg` and `--rail-border` in its own `:root` and `rail.css` only consumes them. Rail items are `44×44px` minimum (Apple HIG touch-target floor).
+At `min-width: 640px` the header re-lays out as a fixed 64px right rail; below that width the horizontal top bar is unchanged. Geometry is shared in `landing/static/shared/rail.css` (`--rail-w: 64px`, `--rail-item: 44px`, `--rail-inset-right: env(safe-area-inset-right, 0px)`); colour is sovereign per module — each module declares `--rail-bg` and `--rail-border` in its own `:root` and `rail.css` only consumes them. Rail items are `44×44px` minimum (Apple HIG touch-target floor).
 
 Known limitation: the top bar's small touch targets (19–29px) below 640px are a pre-existing issue, out of scope for the rail change.
 
