@@ -154,6 +154,10 @@ Run tests with: `venv/bin/python -m pytest tests/test_workout_tracker_api.py -v`
 
 The service account JSON file is at `/Users/jason/code/personal/habitz/budget-490711-92178b410d52.json`.
 
+## Hindsight Memory Bank
+
+Habitz memories live in the Hindsight `habitz` memory bank on server03 (Docker, REST :8888). MCP servers `hindsight` and `local-mcp` point at `http://server03:8888/mcp/habitz/`; the `pi` bank is intentionally empty. Bank = MCP URL path. See MEMORY.md for the full layout.
+
 ## Production Deployment
 
 Habitz production runs on the **rawkit-01** server (ssh alias `rawkit-01`, IP `5.161.251.18`):
@@ -176,6 +180,15 @@ Habitz production runs on the **rawkit-01** server (ssh alias `rawkit-01`, IP `5
 - **Frontend**: Server-rendered Jinja2 + vanilla JS (IIFEs) + custom CSS; no frontend framework
 - **Config**: `.env` file for secrets; `DATABASE_URL` env var overrides `.env` loading
 - **Timezone**: All user-facing date logic uses `ZoneInfo(user.timezone or 'America/New_York')`
+
+## Responsive Layout (iPhone Duo)
+
+- **Rail breakpoint: 640px CSS width.** At ≥640px the module chrome becomes a fixed 64px left rail (`landing/static/shared/rail.css`); below it the horizontal top bar is unchanged.
+- **Why 640px:** the iPhone Duo viewports are 382px (folded portrait), 594px (folded landscape), 669px (unfolded portrait), 951px (unfolded landscape), and 385px (split view per window); Chrome on iOS renders the Duo at 871px. 640px keeps the top bar for 382/385/594 and turns it into a rail for 669/871/951.
+- **Rail tokens:** shared geometry lives in `landing/static/shared/rail.css` (`--rail-w: 64px`, `--rail-item: 44px`, `--rail-inset-left: env(safe-area-inset-left, 0px)`). Each module declares its own `--rail-bg` / `--rail-border` in its own `:root` (Module Color Sovereignty) — `rail.css` consumes them and must not declare them. Rail items are 44×44px minimum (Apple HIG touch-target floor).
+- **Manifests:** every PWA manifest must set `"orientation": "any"` so the installed app can rotate; the viewport meta must stay zoomable (no `user-scalable=no`).
+- **Known limitation:** the unfolded-landscape crease at x ≈ 475 crosses the centred 600px content column; content reflow around the crease is a deliberate follow-up, and the Viewport Segments API (`horizontal-viewport-segments`) cannot be relied on while it is behind a Safari feature flag.
+- Contract tests pin all of the above in `tests/test_responsive_layout.py`.
 
 ## Key Design Decisions
 

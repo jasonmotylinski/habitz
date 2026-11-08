@@ -217,3 +217,96 @@ class TestMealRail:
     def test_meal_nav_links_have_accessible_names(self):
         rel = "meal_planner/templates/base.html"
         assert_controls_have_aria_labels((REPO_ROOT / rel).read_text(), rel)
+
+
+# module -> (stylesheet that declares the colour tokens,
+#            stylesheet that carries the >=640px rail block)
+# The meal module keeps its tokens in base.css and its navbar rules in
+# components.css; every other module keeps both in one file.
+MODULE_STYLESHEETS = {
+    "landing": ("landing/static/css/habits.css", "landing/static/css/habits.css"),
+    "budget": ("budget_tracker/static/css/budget.css", "budget_tracker/static/css/budget.css"),
+    "calorie": ("calorie_tracker/static/css/base.css", "calorie_tracker/static/css/base.css"),
+    "fasting": ("fasting_tracker/static/css/base.css", "fasting_tracker/static/css/base.css"),
+    "workout": ("workout_tracker/static/css/style.css", "workout_tracker/static/css/style.css"),
+    "meal": ("meal_planner/static/css/base.css", "meal_planner/static/css/components.css"),
+}
+
+
+def strip_css_comments(css: str) -> str:
+    import re
+
+    return re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+
+
+def root_block_bodies(css: str) -> list[str]:
+    """The body of every `:root { … }` block, comments stripped."""
+    import re
+
+    css = strip_css_comments(css)
+    return re.findall(r":root\s*\{([^}]*)\}", css)
+
+
+def media_block_body(css: str, condition: str) -> str | None:
+    """The body of the first `@media (condition) { … }` block, or None.
+
+    Brace-matched so a nested rule cannot end the block early.
+    """
+    at = css.find(f"@media ({condition})")
+    if at == -1:
+        return None
+    open_brace = css.find("{", at)
+    depth = 0
+    for i in range(open_brace, len(css)):
+        if css[i] == "{":
+            depth += 1
+        elif css[i] == "}":
+            depth -= 1
+            if depth == 0:
+                return css[open_brace + 1 : i]
+    return None
+
+
+class TestRailCrossModuleContract:
+    """Every module must honour the same rail contract.
+
+    The per-module tests above pin one module each; nothing else asserts the
+    contract they all have to follow: declare your own `--rail-bg` /
+    `--rail-border` in your own `:root` (Module Color Sovereignty), and ship a
+    non-empty `@media (min-width: 640px)` rail block. The shared stylesheet
+    owns geometry only.
+    """
+
+    def test_every_module_declares_rail_colour_tokens_in_root(self):
+        for module, (token_sheet, _) in MODULE_STYLESHEETS.items():
+            css = (REPO_ROOT / token_sheet).read_text()
+            bodies = root_block_bodies(css)
+            assert any("--rail-bg:" in body and "--rail-border:" in body for body in bodies), (
+                f"{module}: {token_sheet} must declare --rail-bg: and --rail-border: "
+                "inside a :root block (Module Color Sovereignty)"
+            )
+
+    def test_every_module_ships_a_non_empty_rail_media_block(self):
+        for module, (_, rail_sheet) in MODULE_STYLESHEETS.items():
+            css = (REPO_ROOT / rail_sheet).read_text()
+            body = media_block_body(css, "min-width: 640px")
+            assert body is not None, (
+                f"{module}: {rail_sheet} has no @media (min-width: 640px) block — "
+                "the module would stay in top-bar mode on the iPhone Duo"
+            )
+            assert body.strip(), (
+                f"{module}: {rail_sheet} has an empty @media (min-width: 640px) block"
+            )
+
+    def test_shared_rail_stylesheet_declares_geometry_only(self):
+        css = strip_css_comments((REPO_ROOT / RAIL_STYLESHEET).read_text())
+        assert "--rail-w: 64px" in css
+        assert "--rail-item: 44px" in css
+        assert "--rail-bg:" not in css, (
+            f"{RAIL_STYLESHEET} declares --rail-bg; colour belongs to each module's "
+            ":root (Module Color Sovereignty)"
+        )
+        assert "--rail-border:" not in css, (
+            f"{RAIL_STYLESHEET} declares --rail-border; colour belongs to each module's "
+            ":root (Module Color Sovereignty)"
+        )
