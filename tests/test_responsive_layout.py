@@ -218,6 +218,14 @@ class TestMealRail:
         rel = "meal_planner/templates/base.html"
         assert_controls_have_aria_labels((REPO_ROOT / rel).read_text(), rel)
 
+    def test_meal_toast_clears_the_rail(self):
+        """The toast is fixed to the bottom-right — over the rail without an offset."""
+        css = strip_css_comments((REPO_ROOT / "meal_planner/static/css/components.css").read_text())
+        bodies = media_block_bodies(css, "min-width: 640px")
+        assert any(
+            ".toast" in body and "--rail-w" in body and "right:" in body for body in bodies
+        ), "meal_planner: .toast needs a rail-aware right offset at >=640px"
+
 
 # module -> (stylesheet that declares the colour tokens,
 #            stylesheet that carries the >=640px rail block)
@@ -267,6 +275,24 @@ def media_block_body(css: str, condition: str) -> str | None:
     return None
 
 
+def media_block_bodies(css: str, condition: str) -> list[str]:
+    """The body of every `@media (condition) { … }` block, comments stripped.
+
+    A module can legitimately own several blocks with the same condition —
+    calorie and fasting each have a content-width block and their rail block.
+    """
+    css = strip_css_comments(css)
+    bodies = []
+    at = 0
+    while (at := css.find(f"@media ({condition})", at)) != -1:
+        body = media_block_body(css[at:], condition)
+        if body is None:
+            break
+        bodies.append(body)
+        at += 1
+    return bodies
+
+
 class TestRailCrossModuleContract:
     """Every module must honour the same rail contract.
 
@@ -289,13 +315,19 @@ class TestRailCrossModuleContract:
     def test_every_module_ships_a_non_empty_rail_media_block(self):
         for module, (_, rail_sheet) in MODULE_STYLESHEETS.items():
             css = (REPO_ROOT / rail_sheet).read_text()
-            body = media_block_body(css, "min-width: 640px")
-            assert body is not None, (
+            bodies = media_block_bodies(css, "min-width: 640px")
+            assert bodies, (
                 f"{module}: {rail_sheet} has no @media (min-width: 640px) block — "
                 "the module would stay in top-bar mode on the iPhone Duo"
             )
-            assert body.strip(), (
-                f"{module}: {rail_sheet} has an empty @media (min-width: 640px) block"
+            # The rail block, not merely some 640px block: a module can have
+            # an older content-width block first, which would pass on its own.
+            rail_selectors = (".app-header", ".navbar")
+            assert any(
+                body.strip() and any(sel in body for sel in rail_selectors) for body in bodies
+            ), (
+                f"{module}: no non-empty @media (min-width: 640px) block contains "
+                f"{' or '.join(rail_selectors)} — {rail_sheet} has no rail block"
             )
 
     def test_shared_rail_stylesheet_declares_geometry_only(self):
@@ -310,3 +342,19 @@ class TestRailCrossModuleContract:
             f"{RAIL_STYLESHEET} declares --rail-border; colour belongs to each module's "
             ":root (Module Color Sovereignty)"
         )
+
+    def test_shared_rail_stylesheet_centres_content_around_the_rail(self):
+        """Content keeps an equal gutter on both sides of the rail.
+
+        The rail takes --rail-w off the right edge only; offsetting the right
+        side alone leaves `margin: 0 auto` columns visibly off the middle of
+        the screen (reported on the landing dashboard on a real iPhone Duo).
+        """
+        css = strip_css_comments((REPO_ROOT / RAIL_STYLESHEET).read_text())
+        body = media_block_body(css, "min-width: 640px")
+        assert body is not None
+        assert "padding-left: var(--rail-w)" in body, (
+            f"{RAIL_STYLESHEET}: rail mode must offset the left edge by --rail-w too, "
+            "so centred columns stay centred on the screen"
+        )
+        assert "padding-right: calc(var(--rail-w) + var(--rail-inset-right))" in body

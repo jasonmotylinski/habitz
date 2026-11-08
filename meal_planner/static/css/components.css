@@ -749,6 +749,13 @@ tr:hover {
         justify-content: center;
         font-size: 1.35rem;
     }
+
+    /* Toasts are fixed to the viewport's bottom-right, which the rail now
+       occupies — and they sit above it (z-index 1000 > 200). Keep them
+       clear of the rail. */
+    .toast {
+        right: calc(var(--spacing-lg) + var(--rail-w) + var(--rail-inset-right));
+    }
 }
 
 

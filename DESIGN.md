@@ -308,6 +308,8 @@ The app switcher is the shared navigation component (rail aside — see *Navigat
 
 At `min-width: 640px` the header re-lays out as a fixed 64px right rail; below that width the horizontal top bar is unchanged. Geometry is shared in `landing/static/shared/rail.css` (`--rail-w: 64px`, `--rail-item: 44px`, `--rail-inset-right: env(safe-area-inset-right, 0px)`); colour is sovereign per module — each module declares `--rail-bg` and `--rail-border` in its own `:root` and `rail.css` only consumes them. Rail items are `44×44px` minimum (Apple HIG touch-target floor).
 
+Rail mode offsets content by one rail width on **both** sides (`body { padding-left / padding-right }`), so `margin: 0 auto` columns stay centred on the screen with the rail balanced by an equal gutter — offsetting the rail side alone pushed the landing dashboard visibly off-centre on a real iPhone Duo. Fixed-position chrome is placed against the viewport and must be given its own rail-aware offset on the rail side: the workout timer bar and FAB (`workout_tracker/static/css/style.css`) and the meal toast (`meal_planner/static/css/components.css`).
+
 Known limitation: the top bar's small touch targets (19–29px) below 640px are a pre-existing issue, out of scope for the rail change.
 
 ### Habit Ring (Landing Signature Component)

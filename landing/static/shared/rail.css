@@ -21,10 +21,12 @@
 }
 
 @media (min-width: 640px) {
-    /* The rail is fixed to the viewport's right edge, so page content is
-       offset by the same amount. Fixed-position chrome (timers, FABs,
-       toasts) is positioned against the viewport and is unaffected. */
+    /* The rail is fixed to the viewport's right edge. Content is offset by
+       the same amount on BOTH sides: a column centred with `margin: 0 auto`
+       then sits in the middle of the screen, with the rail balanced by an
+       equal gutter on the left instead of the page hugging the left edge. */
     body {
+        padding-left: var(--rail-w);
         padding-right: calc(var(--rail-w) + var(--rail-inset-right));
     }
 
