@@ -18,16 +18,23 @@
     /* Landscape notch inset: the rail hugs the physical right edge, so it has
        to grow by the inset instead of drawing under it. */
     --rail-inset-right: env(safe-area-inset-right, 0px);
+    /* Blank margin kept clear on BOTH sides of the page in rail mode. The rail
+       takes --rail-w out of the right side, so an equal margin on the left is
+       what keeps `margin: 0 auto` columns centred in the space that is left
+       over rather than sliding under the rail. */
+    --rail-gutter: 20px;
 }
 
 @media (min-width: 640px) {
-    /* The rail is fixed to the viewport's right edge. Content is offset by
-       the same amount on BOTH sides: a column centred with `margin: 0 auto`
-       then sits in the middle of the screen, with the rail balanced by an
-       equal gutter on the left instead of the page hugging the left edge. */
+    /* The rail is fixed to the viewport's right edge; the page is offset by
+       the rail width plus one gutter, and by the same gutter on the left, so
+       content is centred in the area beside the rail with clear air on both
+       sides. Offsetting only the rail side slides content under it; offsetting
+       by --rail-w on both sides centres content on the SCREEN, which leaves a
+       dead band on the left and the page touching the rail. */
     body {
-        padding-left: var(--rail-w);
-        padding-right: calc(var(--rail-w) + var(--rail-inset-right));
+        padding-left: var(--rail-gutter);
+        padding-right: calc(var(--rail-gutter) + var(--rail-w) + var(--rail-inset-right));
     }
 
     .app-header,

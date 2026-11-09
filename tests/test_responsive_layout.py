@@ -175,6 +175,59 @@ class TestLandingRail:
         rel = "landing/templates/index.html"
         assert_controls_have_aria_labels((REPO_ROOT / rel).read_text(), rel)
 
+    def test_landing_content_pads_each_edge_with_that_edge_inset(self):
+        """A `padding` shorthand reads top right bottom left.
+
+        Landing had the two side safe-area tokens swapped, so the inset the
+        device reserves on one edge widened the OPPOSITE gutter: on the folded
+        iPhone Duo display the reserved strip is on the right, and the
+        dashboard column slid away from the rail into a dead band on the left.
+        """
+        import re
+
+        css = strip_css_comments(
+            (REPO_ROOT / "landing/static/css/habits.css").read_text()
+        )
+        rule = re.search(r"\.main-content\s*\{[^}]*padding:\s*([^;]+);", css)
+        assert rule, "landing/static/css/habits.css: `.main-content` has no padding rule"
+        sides = css_value_parts(rule.group(1))
+        assert len(sides) == 4, f"expected a 4-value shorthand, got {sides}"
+        assert "--safe-right" in sides[1], (
+            f"landing `.main-content` right padding is {sides[1]!r}: the rail and the "
+            "Duo's reserved strip are both on the right, so the right slot must use "
+            "--safe-right"
+        )
+        assert "--safe-left" in sides[3], (
+            f"landing `.main-content` left padding is {sides[3]!r}: must use --safe-left"
+        )
+
+    def test_landing_keeps_plain_gutters_beside_the_rail(self):
+        """In rail mode the rail itself covers the right inset.
+
+        The page must not add that inset a second time inside the rail:
+        doing so pushed the column away from the rail while the left gutter
+        stayed plain.
+        """
+        import re
+
+        css = strip_css_comments(
+            (REPO_ROOT / "landing/static/css/habits.css").read_text()
+        )
+        blocks = [
+            body
+            for body in media_block_bodies(css, "min-width: 640px")
+            if re.search(r"\.main-content\s*\{", body)
+        ]
+        assert blocks, "landing: `.main-content` has no >=640px rail-mode rule"
+        sides = re.search(r"\.main-content\s*\{([^}]*)\}", blocks[-1]).group(1)
+        for edge in ("left", "right"):
+            value = re.search(rf"padding-{edge}:\s*([^;]+);", sides)
+            assert value, f"landing rail mode must set padding-{edge} explicitly"
+            assert "safe-" not in value.group(1), (
+                f"landing rail mode padding-{edge} is {value.group(1)!r}: the rail already "
+                "absorbs the device inset, so the gutter here has to stay plain"
+            )
+
 
 class TestLandingSecondaryRail:
     def test_history_header_controls_have_accessible_names(self):
@@ -245,6 +298,25 @@ def strip_css_comments(css: str) -> str:
     import re
 
     return re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+
+
+def css_value_parts(declaration: str) -> list[str]:
+    """Split a CSS shorthand value on whitespace outside parentheses."""
+    parts, depth, current = [], 0, ""
+    for char in declaration.strip():
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+        if char.isspace() and depth == 0:
+            if current:
+                parts.append(current)
+                current = ""
+            continue
+        current += char
+    if current:
+        parts.append(current)
+    return parts
 
 
 def root_block_bodies(css: str) -> list[str]:
@@ -344,17 +416,28 @@ class TestRailCrossModuleContract:
         )
 
     def test_shared_rail_stylesheet_centres_content_around_the_rail(self):
-        """Content keeps an equal gutter on both sides of the rail.
+        """Content keeps an equal gutter on both sides, inside the rail.
 
-        The rail takes --rail-w off the right edge only; offsetting the right
-        side alone leaves `margin: 0 auto` columns visibly off the middle of
-        the screen (reported on the landing dashboard on a real iPhone Duo).
+        The rail takes --rail-w off the right edge. Offsetting the right side
+        alone slides centred columns under the rail; offsetting both sides by
+        --rail-w centres them on the SCREEN, which leaves a dead band on the
+        left and the page touching the rail (both reported on a real iPhone
+        Duo). The content has to be centred in the area BESIDE the rail: one
+        --rail-gutter of air on the left, one gutter plus the rail on the
+        right.
         """
         css = strip_css_comments((REPO_ROOT / RAIL_STYLESHEET).read_text())
+        assert "--rail-gutter: 20px" in css, (
+            f"{RAIL_STYLESHEET}: rail mode needs a --rail-gutter token so the "
+            "content keeps matching air on both sides of the rail"
+        )
         body = media_block_body(css, "min-width: 640px")
         assert body is not None
-        assert "padding-left: var(--rail-w)" in body, (
-            f"{RAIL_STYLESHEET}: rail mode must offset the left edge by --rail-w too, "
-            "so centred columns stay centred on the screen"
+        assert "padding-left: var(--rail-gutter)" in body, (
+            f"{RAIL_STYLESHEET}: rail mode must offset the left edge by "
+            "--rail-gutter, the same air the rail side reserves beside itself"
         )
-        assert "padding-right: calc(var(--rail-w) + var(--rail-inset-right))" in body
+        assert (
+            "padding-right: calc(var(--rail-gutter) + var(--rail-w) + var(--rail-inset-right))"
+            in body
+        )

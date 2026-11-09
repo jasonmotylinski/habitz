@@ -84,7 +84,7 @@ Agreed with the user before this plan was written:
 - `env(safe-area-inset-*)` is the only way to read insets; the rail pads with `env(safe-area-inset-top)` / `env(safe-area-inset-bottom)` / `env(safe-area-inset-right)` and paints an opaque background behind the inset. The rail hugs the right edge, so the **left** inset belongs to the content area, not to the rail.
 - Every icon-only control must have an accessible name (`aria-label`) — in rail mode the visible text is `display: none`, so `aria-label` becomes the only name.
 - Modal overlays (`position: fixed; inset: 0`, z-index 1322/1343) intentionally cover the rail; do not lower their z-index.
-- Rail mode offsets content by **one rail width on both sides** (`body { padding-left: var(--rail-w); padding-right: … }`) so `margin: 0 auto` columns stay centred on the screen; offsetting the rail side alone leaves them visibly off-centre (found on a real iPhone Duo). Fixed-position chrome other than the header — timer bars, FABs, toasts — is placed against the viewport and needs its own rail-aware offset on the rail side.
+- Rail mode centres content in the area **beside** the rail: `body { padding-left: var(--rail-gutter); padding-right: calc(var(--rail-gutter) + var(--rail-w) + var(--rail-inset-right)); }`. Offsetting the rail side alone slid centred columns under the rail; offsetting both sides by a full rail width centred them on the *screen*, which left a dead band on the left and the page touching the rail — both seen on a real iPhone Duo. Fixed-position chrome other than the header — timer bars, FABs, toasts — is placed against the viewport and needs its own rail-aware offset on the rail side.
 - Test command: `venv/bin/python -m pytest tests/ -q` (from the repo root). The repo's venv is `habitz/habitz/venv`.
 - After the UI work is finished, run the design detector once (not earlier):
   `.pi/skills/impeccable/scripts/impeccable detect --json landing/static/shared/rail.css landing/templates/index.html budget_tracker/templates/budget/index.html calorie_tracker/templates/base.html fasting_tracker/templates/base.html workout_tracker/templates/base.html meal_planner/templates/base.html`
@@ -365,16 +365,20 @@ Write exactly this file:
     /* Landscape notch inset: the rail hugs the physical right edge, so it has
        to grow by the inset instead of drawing under it. */
     --rail-inset-right: env(safe-area-inset-right, 0px);
+    /* Blank margin kept clear on BOTH sides of the page in rail mode: the rail
+       takes --rail-w out of the right side, so the left needs the same air for
+       `margin: 0 auto` columns to sit centred beside the rail. */
+    --rail-gutter: 20px;
 }
 
 @media (min-width: 640px) {
     /* The rail is fixed to the viewport's right edge. Content is offset by
-       the same amount on BOTH sides: a column centred with `margin: 0 auto`
-       then sits in the middle of the screen, with the rail balanced by an
-       equal gutter on the left instead of the page hugging the left edge. */
+       the same gutter on both sides, so a column centred with
+       `margin: 0 auto` sits in the middle of the area BESIDE the rail: clear
+       air from the screen edge and clear air from the rail. */
     body {
-        padding-left: var(--rail-w);
-        padding-right: calc(var(--rail-w) + var(--rail-inset-right));
+        padding-left: var(--rail-gutter);
+        padding-right: calc(var(--rail-gutter) + var(--rail-w) + var(--rail-inset-right));
     }
 
     .app-header,
